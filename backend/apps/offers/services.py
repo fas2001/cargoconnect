@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from apps.cargos.models import Cargo, CargoStatus
 from apps.common.exceptions import BusinessRuleError
+from apps.drivers.services import expired_required_documents, vehicle_insurance_problem
 from apps.notifications.services import notify
 from apps.shipments.models import Shipment, ShipmentEvent, ShipmentStatus
 
@@ -25,6 +26,16 @@ def create_offer(*, cargo: Cargo, driver, vehicle=None, price, message: str = ""
         raise BusinessRuleError(
             "Votre profil doit être vérifié avant de pouvoir envoyer des propositions.", code="driver_not_verified"
         )
+    expired = expired_required_documents(driver)
+    if expired:
+        raise BusinessRuleError(
+            f"Votre justificatif « {expired[0].get_doc_type_display()} » a expiré. Envoyez une version à jour depuis votre profil.",
+            code="document_expired",
+        )
+    if vehicle is not None:
+        problem = vehicle_insurance_problem(vehicle)
+        if problem:
+            raise BusinessRuleError(problem, code="vehicle_insurance")
     if Offer.objects.filter(cargo=cargo, driver=driver, status=OfferStatus.PENDING).exists():
         raise BusinessRuleError(
             "Vous avez déjà une proposition en cours sur cette annonce : modifiez-la.", code="offer_exists"

@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -84,6 +85,13 @@ export default function Vehicles() {
           </View>
         </Card>
       ))}
+
+      {active.length ? (
+        <>
+          <Banner message={t("Pour chaque camion, ajoutez la carte grise (recto et verso) et l'attestation d'assurance.")} />
+          <Button title={t('Mes justificatifs')} variant="secondary" icon="document-text-outline" onPress={() => router.push('/documents')} />
+        </>
+      ) : null}
 
       <SectionTitle>{t('Ajouter un véhicule')}</SectionTitle>
       {error ? <Banner tone="danger" message={error} /> : null}

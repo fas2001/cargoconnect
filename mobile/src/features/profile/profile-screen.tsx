@@ -58,7 +58,7 @@ export function ProfileScreen({ role }: { role: Role }) {
             <Banner tone="danger" message={t('Motif : {reason}', { reason: driver.data.rejection_reason })} />
           ) : null}
           <MenuRow icon="bus-outline" label={t('Mes véhicules ({count})', { count: driver.data.vehicles.filter((v) => v.is_active).length })} onPress={() => router.push('/vehicles')} />
-          <MenuRow icon="document-text-outline" label={t('Mes justificatifs ({count})', { count: driver.data.documents.length })} onPress={() => router.push('/documents')} />
+          <MenuRow icon="document-text-outline" label={t('Mes justificatifs ({done}/{total})', { done: driver.data.checklist.filter((i) => i.state === 'verified').length, total: driver.data.checklist.length })} onPress={() => router.push('/documents')} />
         </Card>
       ) : null}
 

@@ -1783,21 +1783,27 @@ components:
     DocTypeEnum:
       enum:
       - cin
+      - selfie
       - permis
       - carte_grise
       - assurance
+      - visite_technique
       - agrement
       - autre
       type: string
       description: |-
         * `cin` - Carte d'identité nationale
+        * `selfie` - Photo du visage (selfie)
         * `permis` - Permis de conduire
         * `carte_grise` - Carte grise
         * `assurance` - Attestation d'assurance
+        * `visite_technique` - Visite technique
         * `agrement` - Agrément / inscription transporteur
         * `autre` - Autre
     DriverDocument:
       type: object
+      description: 'Justificatif vu par le chauffeur. Le fichier n''est jamais renvoyé
+        : il reste privé.'
       properties:
         id:
           type: string
@@ -1810,6 +1816,35 @@ components:
         doc_type_label:
           type: string
           readOnly: true
+        side:
+          allOf:
+          - $ref: '#/components/schemas/SideEnum'
+          title: Face
+        vehicle:
+          type: string
+          format: uuid
+          nullable: true
+        document_number:
+          type: string
+          title: Numéro
+          maxLength: 60
+        holder_name:
+          type: string
+          title: Nom du titulaire
+          maxLength: 150
+        issuer:
+          type: string
+          title: Émetteur / assureur
+          maxLength: 120
+        expires_on:
+          type: string
+          format: date
+          nullable: true
+          title: Expire le
+        covers_goods:
+          type: boolean
+          nullable: true
+          title: Couvre la marchandise transportée
         status:
           allOf:
           - $ref: '#/components/schemas/VerificationStatusEnum'
@@ -1818,6 +1853,9 @@ components:
           type: string
           readOnly: true
           title: Note de vérification
+        is_expired:
+          type: boolean
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -1828,20 +1866,52 @@ components:
       - doc_type
       - doc_type_label
       - id
+      - is_expired
       - review_note
       - status
     DriverDocumentRequest:
       type: object
+      description: 'Justificatif vu par le chauffeur. Le fichier n''est jamais renvoyé
+        : il reste privé.'
       properties:
         doc_type:
           allOf:
           - $ref: '#/components/schemas/DocTypeEnum'
           title: Type
+        side:
+          allOf:
+          - $ref: '#/components/schemas/SideEnum'
+          title: Face
+        vehicle:
+          type: string
+          format: uuid
+          nullable: true
         file:
           type: string
           format: binary
           writeOnly: true
           title: Fichier
+        document_number:
+          type: string
+          title: Numéro
+          maxLength: 60
+        holder_name:
+          type: string
+          title: Nom du titulaire
+          maxLength: 150
+        issuer:
+          type: string
+          title: Émetteur / assureur
+          maxLength: 120
+        expires_on:
+          type: string
+          format: date
+          nullable: true
+          title: Expire le
+        covers_goods:
+          type: boolean
+          nullable: true
+          title: Couvre la marchandise transportée
       required:
       - doc_type
       - file
@@ -1886,6 +1956,12 @@ components:
           items:
             $ref: '#/components/schemas/DriverDocument'
           readOnly: true
+        checklist:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
         rating:
           type: string
           readOnly: true
@@ -1895,6 +1971,7 @@ components:
           readOnly: true
           title: Créé le
       required:
+      - checklist
       - created_at
       - documents
       - id
@@ -2997,6 +3074,16 @@ components:
         * `completed` - Livraison confirmée
         * `cancelled` - Annulé
         * `disputed` - En litige
+    SideEnum:
+      enum:
+      - recto
+      - verso
+      - unique
+      type: string
+      description: |-
+        * `recto` - Recto
+        * `verso` - Verso
+        * `unique` - Unique
     TargetRoleEnum:
       enum:
       - driver

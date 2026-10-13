@@ -4,7 +4,8 @@ from rest_framework.exceptions import NotFound
 from apps.common.permissions import IsDriver
 from apps.vehicles.models import Vehicle
 
-from .models import DriverDocument, DriverProfile, VerificationStatus
+from . import services
+from .models import DriverDocument, DriverProfile
 from .serializers import DriverDocumentSerializer, DriverProfileSerializer, PublicDriverSerializer, VehicleSerializer
 
 
@@ -33,15 +34,10 @@ class MyDocumentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewset
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return DriverDocument.objects.none()
-        return self.request.user.driver_profile.documents.all()
+        return services.current_documents(self.request.user.driver_profile)
 
     def perform_create(self, serializer):
-        profile = self.request.user.driver_profile
-        serializer.save(driver=profile)
-        # Un nouveau justificatif relance la vérification si le profil avait été refusé.
-        if profile.verification_status == VerificationStatus.REJECTED:
-            profile.verification_status = VerificationStatus.PENDING
-            profile.save(update_fields=["verification_status", "updated_at"])
+        serializer.instance = services.add_document(self.request.user.driver_profile, **serializer.validated_data)
 
 
 class MyVehiclesViewSet(viewsets.ModelViewSet):

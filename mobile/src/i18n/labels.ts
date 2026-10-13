@@ -1,5 +1,5 @@
 // Libellés des statuts et listes fixes, traduits dans la langue de l'interface.
-import type { CargoStatus, OfferStatus, ShipmentStatus, VerificationStatus } from '@/types/api';
+import type { CargoStatus, DocumentType, OfferStatus, ShipmentStatus, VerificationStatus } from '@/types/api';
 
 import { t, type TKey } from './index';
 
@@ -55,14 +55,16 @@ const REPORT_REASONS = [
   { value: 'other', label: 'Autre' },
 ] as const satisfies readonly { value: string; label: TKey }[];
 
-const DOCUMENT_TYPES = [
-  { value: 'cin', label: "Carte d'identité nationale" },
-  { value: 'permis', label: 'Permis de conduire' },
-  { value: 'carte_grise', label: 'Carte grise' },
-  { value: 'assurance', label: "Attestation d'assurance" },
-  { value: 'agrement', label: 'Agrément / inscription transporteur' },
-  { value: 'autre', label: 'Autre' },
-] as const satisfies readonly { value: string; label: TKey }[];
+const DOCUMENT_TYPES = {
+  cin: "Carte d'identité nationale",
+  selfie: 'Photo du visage (selfie)',
+  permis: 'Permis de conduire',
+  carte_grise: 'Carte grise',
+  assurance: "Attestation d'assurance",
+  visite_technique: 'Visite technique',
+  agrement: 'Agrément / inscription transporteur',
+  autre: 'Autre',
+} as const satisfies Record<DocumentType, TKey>;
 
 export const cargoStatusLabel = (status: CargoStatus) => t(CARGO_STATUS[status]);
 export const offerStatusLabel = (status: OfferStatus) => t(OFFER_STATUS[status]);
@@ -76,4 +78,4 @@ export function shipmentActionLabel(status: ShipmentStatus): string {
 }
 
 export const reportReasons = () => REPORT_REASONS.map((r) => ({ value: r.value, label: t(r.label) }));
-export const documentTypes = () => DOCUMENT_TYPES.map((d) => ({ value: d.value, label: t(d.label) }));
+export const documentTypeLabel = (type: DocumentType) => t(DOCUMENT_TYPES[type]);

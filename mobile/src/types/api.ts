@@ -70,13 +70,38 @@ export type Vehicle = {
   is_active: boolean;
 };
 
+export type DocumentType = 'cin' | 'selfie' | 'permis' | 'carte_grise' | 'assurance' | 'visite_technique' | 'agrement' | 'autre';
+export type DocumentSide = 'recto' | 'verso' | 'unique';
+
 export type DriverDocument = {
   id: string;
-  doc_type: string;
+  doc_type: DocumentType;
   doc_type_label: string;
+  side: DocumentSide;
+  vehicle: string | null;
+  document_number: string;
+  holder_name: string;
+  issuer: string;
+  expires_on: string | null;
+  covers_goods: boolean | null;
   status: VerificationStatus;
   review_note: string;
+  is_expired: boolean;
   created_at: string;
+};
+
+export type ChecklistState = 'missing' | 'pending' | 'verified' | 'rejected' | 'expired';
+
+/** Justificatif exigé (personnel ou par camion) et son état. */
+export type ChecklistItem = {
+  doc_type: DocumentType;
+  side: DocumentSide;
+  vehicle_id: string | null;
+  vehicle_label: string;
+  state: ChecklistState;
+  document_id: string | null;
+  expires_on: string | null;
+  review_note: string;
 };
 
 export type DriverProfile = {
@@ -88,6 +113,7 @@ export type DriverProfile = {
   rejection_reason: string;
   vehicles: Vehicle[];
   documents: DriverDocument[];
+  checklist: ChecklistItem[];
   rating: Rating;
   created_at: string;
 };

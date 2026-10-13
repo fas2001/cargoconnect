@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from apps.accounts import views as accounts
 from apps.cargos import views as cargos
 from apps.drivers import views as drivers
+from apps.drivers.admin_views import document_file
 from apps.notifications import views as notifications
 from apps.offers import views as offers
 from apps.reports import views as reports
@@ -51,6 +52,8 @@ api = [
 ]
 
 urlpatterns = [
+    # Justificatifs chauffeurs : vue protégée et journalisée (avant les URLs de l'admin).
+    path("admin/justificatifs/<uuid:pk>/fichier/", document_file, name="admin-document-file"),
     path("admin/", admin.site.urls),
     path("api/", include(api)),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

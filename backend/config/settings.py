@@ -129,6 +129,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # avec URLs signées. Les justificatifs chauffeurs ne sont jamais servis publiquement.
 MEDIA_URL = "media/"
 MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
+# Justificatifs chauffeurs (CIN, permis...) : dossier séparé, jamais servi par une URL publique.
+# Seuls les administrateurs autorisés les ouvrent, via une vue qui journalise chaque consultation.
+PRIVATE_MEDIA_ROOT = Path(os.environ.get("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media"))
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
