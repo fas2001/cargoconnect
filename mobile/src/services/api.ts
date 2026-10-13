@@ -1,6 +1,8 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+import { getLanguage, t, tr } from '@/i18n';
+
 import { tokenStorage } from './token-storage';
 
 /**
@@ -34,19 +36,19 @@ function parseError(status: number, body: unknown): ApiError {
   if (body && typeof body === 'object' && !Array.isArray(body)) {
     const data = body as Record<string, unknown>;
     if (typeof data.detail === 'string') {
-      return new ApiError(data.detail, status, typeof data.code === 'string' ? data.code : undefined);
+      return new ApiError(tr(data.detail), status, typeof data.code === 'string' ? data.code : undefined);
     }
     const fieldErrors: Record<string, string> = {};
     for (const [field, value] of Object.entries(data)) {
       const first = Array.isArray(value) ? value[0] : value;
-      if (typeof first === 'string') fieldErrors[field] = first;
+      if (typeof first === 'string') fieldErrors[field] = tr(first);
     }
     const first = fieldErrors.non_field_errors ?? Object.values(fieldErrors)[0];
-    return new ApiError(first ?? 'Requête invalide.', status, undefined, fieldErrors);
+    return new ApiError(first ?? t('Requête invalide.'), status, undefined, fieldErrors);
   }
-  if (Array.isArray(body) && typeof body[0] === 'string') return new ApiError(body[0], status);
-  if (status >= 500) return new ApiError('Le serveur rencontre un problème. Réessayez dans un instant.', status);
-  return new ApiError(`Erreur ${status}`, status);
+  if (Array.isArray(body) && typeof body[0] === 'string') return new ApiError(tr(body[0]), status);
+  if (status >= 500) return new ApiError(t('Le serveur rencontre un problème. Réessayez dans un instant.'), status);
+  return new ApiError(t('Erreur {status}', { status }), status);
 }
 
 type RequestOptions = {
@@ -100,12 +102,12 @@ async function send(url: string, init: RequestInit, token: string | null): Promi
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
-  headers.set('Accept-Language', 'fr');
+  headers.set('Accept-Language', getLanguage());
   if (token) headers.set('Authorization', `Bearer ${token}`);
   try {
     return await fetch(url, { ...init, headers, signal: controller.signal });
   } catch {
-    throw new ApiError('Connexion impossible. Vérifiez votre réseau et réessayez.', 0, 'network');
+    throw new ApiError(t('Connexion impossible. Vérifiez votre réseau et réessayez.'), 0, 'network');
   } finally {
     clearTimeout(timer);
   }
@@ -132,7 +134,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if (!token) {
       await tokenStorage.clear();
       onSessionExpired?.();
-      throw new ApiError('Votre session a expiré. Reconnectez-vous.', 401, 'session_expired');
+      throw new ApiError(t('Votre session a expiré. Reconnectez-vous.'), 401, 'session_expired');
     }
     res = await send(url, init, token);
   }
@@ -155,5 +157,5 @@ function safeJson(text: string): unknown {
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;
-  return 'Une erreur inattendue est survenue.';
+  return t('Une erreur inattendue est survenue.');
 }

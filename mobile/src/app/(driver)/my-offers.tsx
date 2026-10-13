@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Route } from '@/components/cargo-card';
 import { OfferStatusBadge } from '@/components/status-badge';
@@ -10,12 +10,14 @@ import { Colors, FontSize, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import { formatDay, formatPrice } from '@/utils/format';
+import { t, type TKey } from '@/i18n';
+import { TruckLoader } from '@/components/truck-loader';
 
 const FILTERS = [
   { label: 'En attente', status: 'pending' },
   { label: 'Acceptées', status: 'accepted' },
   { label: 'Historique', status: 'rejected,withdrawn,closed' },
-];
+] as const satisfies readonly { label: TKey; status: string }[];
 
 export default function MyOffers() {
   const [filter, setFilter] = useState(0);
@@ -37,7 +39,7 @@ export default function MyOffers() {
       ListHeaderComponent={
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {FILTERS.map((f, i) => (
-            <Chip key={f.label} label={f.label} selected={i === filter} onPress={() => setFilter(i)} />
+            <Chip key={f.label} label={t(f.label)} selected={i === filter} onPress={() => setFilter(i)} />
           ))}
         </ScrollView>
       }
@@ -64,13 +66,13 @@ export default function MyOffers() {
         ) : query.error ? (
           <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />
         ) : (
-          <EmptyState icon="pricetags-outline" title="Aucune proposition" message="Parcourez les cargaisons disponibles et proposez votre tarif." />
+          <EmptyState icon="pricetags-outline" title={t('Aucune proposition')} message={t('Parcourez les cargaisons disponibles et proposez votre tarif.')} />
         )
       }
       refreshing={query.isRefetching}
       onRefresh={() => query.refetch()}
       onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && query.fetchNextPage()}
-      ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator /> : null}
+      ListFooterComponent={query.isFetchingNextPage ? <TruckLoader size="small" label={false} /> : null}
     />
   );
 }

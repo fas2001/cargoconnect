@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Colors } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/features/auth/auth-context';
 import { ApiError } from '@/services/api';
+import { initLanguage, t, useLanguage } from '@/i18n';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,25 +42,34 @@ function RootNavigator() {
       }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="role" options={{ title: 'Choisir mon espace', headerBackVisible: false }} />
       <Stack.Screen name="(client)" options={{ headerShown: false }} />
       <Stack.Screen name="(driver)" options={{ headerShown: false }} />
-      <Stack.Screen name="cargo/[id]" options={{ title: 'Annonce' }} />
-      <Stack.Screen name="shipment/[id]" options={{ title: 'Transport' }} />
-      <Stack.Screen name="vehicles" options={{ title: 'Mes véhicules' }} />
-      <Stack.Screen name="documents" options={{ title: 'Mes justificatifs' }} />
-      <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+      <Stack.Screen name="cargo/[id]" options={{ title: t('Annonce') }} />
+      <Stack.Screen name="shipment/[id]" options={{ title: t('Transport') }} />
+      <Stack.Screen name="vehicles" options={{ title: t('Mes véhicules') }} />
+      <Stack.Screen name="documents" options={{ title: t('Mes justificatifs') }} />
+      <Stack.Screen name="notifications" options={{ title: t('Notifications') }} />
     </Stack>
   );
 }
 
 export default function RootLayout() {
   const [queryClient] = useState(createQueryClient);
+  const [languageReady, setLanguageReady] = useState(false);
+  const language = useLanguage();
+
+  // La langue doit être connue avant le premier affichage (textes et sens de lecture).
+  useEffect(() => {
+    void initLanguage().finally(() => setLanguageReady(true));
+  }, []);
+
+  if (!languageReady) return null;
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <StatusBar style="dark" />
-        <RootNavigator />
+        <RootNavigator key={language} />
       </AuthProvider>
     </QueryClientProvider>
   );

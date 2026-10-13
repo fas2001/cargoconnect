@@ -1,5 +1,6 @@
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -63,10 +64,12 @@ class MeSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     phone = PhoneField()
     password = serializers.CharField(write_only=True, style={"input_type": "password"})
+    role = serializers.ChoiceField(choices=["client", "driver"], default="client", write_only=True)
+    company_name = serializers.CharField(max_length=150, required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = User
-        fields = ["phone", "full_name", "email", "password"]
+        fields = ["phone", "full_name", "email", "password", "role", "company_name"]
         extra_kwargs = {"email": {"required": False}}
 
     def validate_phone(self, value):
@@ -76,13 +79,22 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         try:
-            password_validation.validate_password(attrs["password"], User(**{k: v for k, v in attrs.items() if k != "password"}))
+            user_fields = {k: attrs[k] for k in ("phone", "full_name", "email") if k in attrs}
+            password_validation.validate_password(attrs["password"], User(**user_fields))
         except DjangoValidationError as exc:
             raise serializers.ValidationError({"password": exc.messages}) from exc
         return attrs
 
+    @transaction.atomic
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+        from apps.drivers.models import DriverProfile
+
+        role = validated_data.pop("role")
+        company_name = validated_data.pop("company_name", "")
+        user = User.objects.create_user(**validated_data)
+        if role == "driver":
+            DriverProfile.objects.create(user=user, company_name=company_name)
+        return user
 
 
 class PhoneTokenObtainPairSerializer(TokenObtainPairSerializer):

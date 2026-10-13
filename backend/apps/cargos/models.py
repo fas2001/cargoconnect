@@ -47,14 +47,15 @@ class CargoStatus(models.TextChoices):
     DRAFT = "draft", "Brouillon"
     PUBLISHED = "published", "Publiée"
     ASSIGNED = "assigned", "Attribuée"
+    COMPLETED = "completed", "Livrée"
     CANCELLED = "cancelled", "Annulée"
     EXPIRED = "expired", "Expirée"
 
 
 class Cargo(BaseModel):
     """
-    Annonce de transport. Son cycle de vie s'arrête à l'attribution :
-    le suivi de la livraison est porté par `shipments.Shipment`.
+    Annonce de transport. Après l'attribution, le suivi de la livraison est porté par
+    `shipments.Shipment` ; l'annonce passe à « Livrée » quand la livraison est confirmée.
     """
 
     client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="cargos")

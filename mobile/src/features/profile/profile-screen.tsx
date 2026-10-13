@@ -5,31 +5,24 @@ import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { VerificationBadge } from '@/components/status-badge';
-import { Banner, Button, Card, type IconName, Screen, TextField, textStyles } from '@/components/ui';
+import { LanguageSwitch } from '@/components/language-switch';
+import { Banner, Button, Card, Chevron, type IconName, Screen, TextField, textStyles } from '@/components/ui';
 import { Colors, FontSize, Spacing } from '@/constants/theme';
 import { useAuth, useCurrentUser } from '@/features/auth/auth-context';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import type { Role } from '@/types/api';
+import { t } from '@/i18n';
 
 export function ProfileScreen({ role }: { role: Role }) {
   const auth = useAuth();
   const user = useCurrentUser();
   const driver = useQuery({ queryKey: ['driver-profile'], queryFn: api.driverProfile, enabled: role === 'driver' });
 
-  const switchTo = async (target: Role) => {
-    if (target === 'driver' && !user.roles.includes('driver')) {
-      router.push('/role');
-      return;
-    }
-    await auth.setActiveRole(target);
-    router.replace(target === 'driver' ? '/cargos-market' : '/home');
-  };
-
   const confirmLogout = () =>
-    Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: () => void auth.logout() },
+    Alert.alert(t('Déconnexion'), t('Voulez-vous vous déconnecter ?'), [
+      { text: t('Annuler'), style: 'cancel' },
+      { text: t('Se déconnecter'), style: 'destructive', onPress: () => void auth.logout() },
     ]);
 
   const rating = role === 'driver' ? driver.data?.rating : user.rating_as_client;
@@ -43,7 +36,7 @@ export function ProfileScreen({ role }: { role: Role }) {
         <View style={styles.rating}>
           <Ionicons name="star" size={16} color={Colors.accent} />
           <Text style={textStyles.secondary}>
-            {rating?.average ? `${rating.average}/5 (${rating.count} avis)` : 'Pas encore d’avis'}
+            {rating?.average ? t('{average}/5 ({count} avis)', { average: rating.average, count: rating.count }) : t('Pas encore d’avis')}
           </Text>
         </View>
       </Card>
@@ -53,38 +46,29 @@ export function ProfileScreen({ role }: { role: Role }) {
       {role === 'driver' && driver.data ? (
         <Card>
           <View style={styles.between}>
-            <Text style={styles.cardTitle}>{driver.data.company_name || 'Profil transporteur'}</Text>
+            <Text style={styles.cardTitle}>{driver.data.company_name || t('Profil transporteur')}</Text>
             <VerificationBadge status={driver.data.verification_status} />
           </View>
           {driver.data.verification_status === 'pending' ? (
             <Text style={textStyles.secondary}>
-              Ajoutez au moins un véhicule et vos justificatifs (CIN, permis, carte grise, assurance). Notre équipe vérifie
-              votre profil avant vos premières propositions.
+              {t('Ajoutez au moins un véhicule et vos justificatifs (CIN, permis, carte grise, assurance). Notre équipe vérifie votre profil avant vos premières propositions.')}
             </Text>
           ) : null}
           {driver.data.verification_status === 'rejected' && driver.data.rejection_reason ? (
-            <Banner tone="danger" message={`Motif : ${driver.data.rejection_reason}`} />
+            <Banner tone="danger" message={t('Motif : {reason}', { reason: driver.data.rejection_reason })} />
           ) : null}
-          <MenuRow icon="bus-outline" label={`Mes véhicules (${driver.data.vehicles.filter((v) => v.is_active).length})`} onPress={() => router.push('/vehicles')} />
-          <MenuRow icon="document-text-outline" label={`Mes justificatifs (${driver.data.documents.length})`} onPress={() => router.push('/documents')} />
+          <MenuRow icon="bus-outline" label={t('Mes véhicules ({count})', { count: driver.data.vehicles.filter((v) => v.is_active).length })} onPress={() => router.push('/vehicles')} />
+          <MenuRow icon="document-text-outline" label={t('Mes justificatifs ({count})', { count: driver.data.documents.length })} onPress={() => router.push('/documents')} />
         </Card>
       ) : null}
 
       <Card>
-        <MenuRow icon="notifications-outline" label="Notifications" onPress={() => router.push('/notifications')} />
-        {role === 'client' ? (
-          <MenuRow
-            icon="swap-horizontal-outline"
-            label={user.roles.includes('driver') ? "Passer à l'espace chauffeur" : 'Devenir transporteur'}
-            onPress={() => switchTo('driver')}
-          />
-        ) : (
-          <MenuRow icon="swap-horizontal-outline" label="Passer à l'espace client" onPress={() => switchTo('client')} />
-        )}
+        <MenuRow icon="notifications-outline" label={t('Notifications')} onPress={() => router.push('/notifications')} />
+        <LanguageRow />
       </Card>
 
-      <Button title="Se déconnecter" variant="danger" icon="log-out-outline" onPress={confirmLogout} />
-      <Text style={[textStyles.caption, { textAlign: 'center' }]}>CargoConnect — version MVP</Text>
+      <Button title={t('Se déconnecter')} variant="danger" icon="log-out-outline" onPress={confirmLogout} />
+      <Text style={[textStyles.caption, { textAlign: 'center' }]}>{t('CargoConnect — version MVP')}</Text>
     </Screen>
   );
 }
@@ -94,8 +78,18 @@ function MenuRow({ icon, label, onPress }: { icon: IconName; label: string; onPr
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.menuRow}>
       <Ionicons name={icon} size={20} color={Colors.primary} />
       <Text style={styles.menuLabel}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+      <Chevron size={18} color={Colors.textMuted} />
     </Pressable>
+  );
+}
+
+function LanguageRow() {
+  return (
+    <View style={styles.menuRow}>
+      <Ionicons name="language-outline" size={20} color={Colors.primary} />
+      <Text style={styles.menuLabel}>{t('Langue')}</Text>
+      <LanguageSwitch />
+    </View>
   );
 }
 
@@ -121,14 +115,14 @@ function PhoneVerification() {
 
   return (
     <Card>
-      <Text style={styles.cardTitle}>Vérifiez votre numéro</Text>
-      <Text style={textStyles.secondary}>Un numéro vérifié inspire confiance aux autres utilisateurs. Le code est envoyé sur WhatsApp : ce numéro doit avoir un compte WhatsApp.</Text>
+      <Text style={styles.cardTitle}>{t('Vérifiez votre numéro')}</Text>
+      <Text style={textStyles.secondary}>{t('Un numéro vérifié inspire confiance aux autres utilisateurs. Le code est envoyé sur WhatsApp : ce numéro doit avoir un compte WhatsApp.')}</Text>
       {error ? <Banner tone="danger" message={error} /> : null}
       {sent ? (
         <>
-          <TextField label="Code reçu sur WhatsApp" keyboardType="number-pad" textContentType="oneTimeCode" maxLength={6} value={code} onChangeText={setCode} />
+          <TextField label={t('Code reçu sur WhatsApp')} keyboardType="number-pad" textContentType="oneTimeCode" maxLength={6} value={code} onChangeText={setCode} />
           <Button
-            title="Valider"
+            title={t('Valider')}
             loading={loading}
             disabled={code.length < 4}
             onPress={() =>
@@ -141,7 +135,7 @@ function PhoneVerification() {
         </>
       ) : (
         <Button
-          title="Recevoir le code sur WhatsApp"
+          title={t('Recevoir le code sur WhatsApp')}
           icon="logo-whatsapp"
           variant="secondary"
           loading={loading}

@@ -4,20 +4,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { setSessionExpiredHandler } from '@/services/api';
 import { api } from '@/services/endpoints';
 import { tokenStorage } from '@/services/token-storage';
-import type { AuthResponse, Role, User } from '@/types/api';
+import type { AuthResponse, RegisterData, Role, User } from '@/types/api';
 
 type AuthState =
   | { status: 'loading'; user: null; activeRole: null }
   | { status: 'signedOut'; user: null; activeRole: null }
-  | { status: 'signedIn'; user: User; activeRole: Role | null };
+  | { status: 'signedIn'; user: User; activeRole: Role };
 
 type AuthContextValue = AuthState & {
   login: (phone: string, password: string) => Promise<void>;
-  register: (data: { phone: string; full_name: string; email?: string; password: string }) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<User | null>;
-  setActiveRole: (role: Role) => Promise<void>;
-  activateDriver: (data: { company_name?: string }) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -28,16 +26,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({ status: 'loading', user: null, activeRole: null });
 
-  const signIn = useCallback(async (user: User) => {
-    const stored = (await tokenStorage.getRole()) as Role | null;
-    // Rôle mémorisé seulement s'il est encore valable ; sinon l'écran de choix du rôle s'affiche.
-    const activeRole = stored && user.roles.includes(stored) ? stored : null;
-    setState({ status: 'signedIn', user, activeRole });
+  // Un compte a un seul rôle, choisi à l'inscription : il détermine l'espace affiché.
+  const signIn = useCallback((user: User) => {
+    setState({ status: 'signedIn', user, activeRole: user.roles[0] });
   }, []);
 
   const signOutLocally = useCallback(async () => {
     await tokenStorage.clear();
-    await tokenStorage.clearRole();
     queryClient.clear();
     setState(SIGNED_OUT);
   }, [queryClient]);
@@ -53,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        await signIn(await api.me());
+        signIn(await api.me());
       } catch {
         // Hors ligne ou session expirée : retour à l'écran de connexion.
         setState(SIGNED_OUT);
@@ -64,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleAuth = useCallback(
     async (response: AuthResponse) => {
       await tokenStorage.setTokens(response.access, response.refresh);
-      await signIn(response.user);
+      signIn(response.user);
     },
     [signIn],
   );
@@ -82,21 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshUser: async () => {
         try {
           const user = await api.me();
-          setState((prev) => (prev.status === 'signedIn' ? { ...prev, user } : prev));
+          setState((prev) => (prev.status === 'signedIn' ? { ...prev, user, activeRole: user.roles[0] } : prev));
           return user;
         } catch {
           return null;
         }
-      },
-      setActiveRole: async (role) => {
-        await tokenStorage.setRole(role);
-        setState((prev) => (prev.status === 'signedIn' ? { ...prev, activeRole: role } : prev));
-      },
-      activateDriver: async (data) => {
-        await api.activateDriver(data);
-        const user = await api.me();
-        await tokenStorage.setRole('driver');
-        setState({ status: 'signedIn', user, activeRole: 'driver' });
       },
     }),
     [state, handleAuth, signOutLocally],

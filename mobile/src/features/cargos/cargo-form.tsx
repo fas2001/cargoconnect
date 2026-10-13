@@ -11,6 +11,7 @@ import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useReferenceData } from '@/hooks/use-reference';
 import { ApiError, errorMessage } from '@/services/api';
 import type { CargoInput, TruckType } from '@/types/api';
+import { t } from '@/i18n';
 
 export const MAX_PHOTOS = 5;
 
@@ -50,13 +51,13 @@ const decimal = (v: string) => v.replace(',', '.').replace(/[^\d.]/g, '');
 
 function validate(v: CargoFormValues): Record<string, string> {
   const errors: Record<string, string> = {};
-  if (!v.title.trim()) errors.title = 'Indiquez un titre.';
-  if (!v.category) errors.category = 'Choisissez une catégorie.';
-  if (!v.weight_kg || Number(v.weight_kg) <= 0) errors.weight_kg = 'Indiquez le poids.';
-  if (!v.truck_type) errors.truck_type = 'Choisissez un type de camion.';
-  if (!v.origin_city) errors.origin_city = 'Choisissez la ville de départ.';
-  if (!v.destination_city) errors.destination_city = "Choisissez la ville d'arrivée.";
-  if (!v.loading_date) errors.loading_date = 'Choisissez une date.';
+  if (!v.title.trim()) errors.title = t('Indiquez un titre.');
+  if (!v.category) errors.category = t('Choisissez une catégorie.');
+  if (!v.weight_kg || Number(v.weight_kg) <= 0) errors.weight_kg = t('Indiquez le poids.');
+  if (!v.truck_type) errors.truck_type = t('Choisissez un type de camion.');
+  if (!v.origin_city) errors.origin_city = t('Choisissez la ville de départ.');
+  if (!v.destination_city) errors.destination_city = t("Choisissez la ville d'arrivée.");
+  if (!v.loading_date) errors.loading_date = t('Choisissez une date.');
   return errors;
 }
 
@@ -116,7 +117,7 @@ export function CargoForm({ initial = EMPTY_CARGO, submitLabel, allowDraft, with
     setErrors(localErrors);
     setFormError(null);
     if (Object.keys(localErrors).length) {
-      setFormError('Merci de compléter les champs indiqués.');
+      setFormError(t('Merci de compléter les champs indiqués.'));
       return;
     }
     setSubmitting(publish ? 'publish' : 'draft');
@@ -139,12 +140,12 @@ export function CargoForm({ initial = EMPTY_CARGO, submitLabel, allowDraft, with
 
   return (
     <>
-      <SectionTitle>Marchandise</SectionTitle>
-      <TextField label="Titre" placeholder="Ex. 20 palettes de carrelage" value={values.title} onChangeText={set('title')} error={errors.title} maxLength={120} />
-      <OptionPicker label="Catégorie" placeholder="Choisir" options={ref.categoryOptions} value={values.category} onChange={set('category')} error={errors.category} />
+      <SectionTitle>{t('Marchandise')}</SectionTitle>
+      <TextField label={t('Titre')} placeholder={t('Ex. 20 palettes de carrelage')} value={values.title} onChangeText={set('title')} error={errors.title} maxLength={120} />
+      <OptionPicker label={t('Catégorie')} placeholder={t('Choisir')} options={ref.categoryOptions} value={values.category} onChange={set('category')} error={errors.category} />
       <TextField
-        label="Description"
-        placeholder="Nature, conditionnement, fragilité..."
+        label={t('Description')}
+        placeholder={t('Nature, conditionnement, fragilité...')}
         multiline
         value={values.description}
         onChangeText={set('description')}
@@ -152,45 +153,45 @@ export function CargoForm({ initial = EMPTY_CARGO, submitLabel, allowDraft, with
       />
       <View style={styles.row}>
         <View style={styles.flex}>
-          <TextField label="Poids (kg)" keyboardType="decimal-pad" placeholder="18000" value={values.weight_kg} onChangeText={(t) => set('weight_kg')(decimal(t))} error={errors.weight_kg} />
+          <TextField label={t('Poids (kg)')} keyboardType="decimal-pad" placeholder="18000" value={values.weight_kg} onChangeText={(text) => set('weight_kg')(decimal(text))} error={errors.weight_kg} />
         </View>
         <View style={styles.flex}>
-          <TextField label="Volume (m³)" keyboardType="decimal-pad" placeholder="Facultatif" value={values.volume_m3} onChangeText={(t) => set('volume_m3')(decimal(t))} error={errors.volume_m3} />
+          <TextField label={t('Volume (m³)')} keyboardType="decimal-pad" placeholder={t('Facultatif')} value={values.volume_m3} onChangeText={(text) => set('volume_m3')(decimal(text))} error={errors.volume_m3} />
         </View>
       </View>
-      <OptionPicker label="Type de camion" placeholder="Choisir" options={ref.truckTypeOptions} value={values.truck_type} onChange={set('truck_type')} error={errors.truck_type} />
+      <OptionPicker label={t('Type de camion')} placeholder={t('Choisir')} options={ref.truckTypeOptions} value={values.truck_type} onChange={set('truck_type')} error={errors.truck_type} />
 
-      <SectionTitle>Trajet</SectionTitle>
-      <OptionPicker label="Ville de départ" placeholder="Choisir une ville" searchable options={ref.cityOptions} value={values.origin_city} onChange={set('origin_city')} error={errors.origin_city} />
+      <SectionTitle>{t('Trajet')}</SectionTitle>
+      <OptionPicker label={t('Ville de départ')} placeholder={t('Choisir une ville')} searchable options={ref.cityOptions} value={values.origin_city} onChange={set('origin_city')} error={errors.origin_city} />
       <TextField
-        label="Adresse de chargement"
-        placeholder="Quartier, rue, zone industrielle..."
+        label={t('Adresse de chargement')}
+        placeholder={t('Quartier, rue, zone industrielle...')}
         value={values.origin_address}
         onChangeText={set('origin_address')}
-        hint="Visible uniquement par le transporteur retenu."
+        hint={t('Visible uniquement par le transporteur retenu.')}
         error={errors.origin_address}
       />
-      <OptionPicker label="Ville d'arrivée" placeholder="Choisir une ville" searchable options={ref.cityOptions} value={values.destination_city} onChange={set('destination_city')} error={errors.destination_city} />
-      <TextField label="Adresse de livraison" value={values.destination_address} onChangeText={set('destination_address')} hint="Visible uniquement par le transporteur retenu." error={errors.destination_address} />
-      <DateField label="Date de chargement souhaitée" value={values.loading_date} onChange={set('loading_date')} minimumDate={today} error={errors.loading_date} />
+      <OptionPicker label={t("Ville d'arrivée")} placeholder={t('Choisir une ville')} searchable options={ref.cityOptions} value={values.destination_city} onChange={set('destination_city')} error={errors.destination_city} />
+      <TextField label={t('Adresse de livraison')} value={values.destination_address} onChangeText={set('destination_address')} hint={t('Visible uniquement par le transporteur retenu.')} error={errors.destination_address} />
+      <DateField label={t('Date de chargement souhaitée')} value={values.loading_date} onChange={set('loading_date')} minimumDate={today} error={errors.loading_date} />
 
-      <SectionTitle>Prix et détails</SectionTitle>
+      <SectionTitle>{t('Prix et détails')}</SectionTitle>
       <TextField
-        label="Prix proposé (DH)"
+        label={t('Prix proposé (DH)')}
         keyboardType="number-pad"
-        placeholder="Facultatif — laissez vide pour recevoir des offres"
+        placeholder={t('Facultatif — laissez vide pour recevoir des offres')}
         value={values.proposed_price}
-        onChangeText={(t) => set('proposed_price')(decimal(t))}
+        onChangeText={(text) => set('proposed_price')(decimal(text))}
         error={errors.proposed_price}
       />
-      <TextField label="Instructions" placeholder="Horaires d'accès, manutention..." multiline value={values.instructions} onChangeText={set('instructions')} error={errors.instructions} />
+      <TextField label={t('Instructions')} placeholder={t("Horaires d'accès, manutention...")} multiline value={values.instructions} onChangeText={set('instructions')} error={errors.instructions} />
 
       {withPhotos ? (
         <>
-          <SectionTitle>Photos ({photos.length}/{MAX_PHOTOS})</SectionTitle>
+          <SectionTitle>{t('Photos ({count}/{max})', { count: photos.length, max: MAX_PHOTOS })}</SectionTitle>
           <View style={styles.photos}>
             {photos.map((p) => (
-              <Pressable key={p.uri} onPress={() => setPhotos((list) => list.filter((x) => x.uri !== p.uri))} accessibilityLabel="Retirer la photo">
+              <Pressable key={p.uri} onPress={() => setPhotos((list) => list.filter((x) => x.uri !== p.uri))} accessibilityLabel={t('Retirer la photo')}>
                 <Image source={p.uri} style={styles.photo} />
                 <View style={styles.remove}>
                   <Ionicons name="close" size={14} color={Colors.white} />
@@ -198,7 +199,7 @@ export function CargoForm({ initial = EMPTY_CARGO, submitLabel, allowDraft, with
               </Pressable>
             ))}
             {photos.length < MAX_PHOTOS ? (
-              <Pressable onPress={pickPhotos} style={[styles.photo, styles.addPhoto]} accessibilityLabel="Ajouter des photos">
+              <Pressable onPress={pickPhotos} style={[styles.photo, styles.addPhoto]} accessibilityLabel={t('Ajouter des photos')}>
                 <Ionicons name="camera-outline" size={26} color={Colors.primary} />
               </Pressable>
             ) : null}
@@ -207,12 +208,12 @@ export function CargoForm({ initial = EMPTY_CARGO, submitLabel, allowDraft, with
       ) : null}
 
       <Text style={styles.notice}>
-        Ne mettez pas votre numéro de téléphone dans l&apos;annonce : il sera partagé automatiquement avec le transporteur retenu.
+        {t("Ne mettez pas votre numéro de téléphone dans l'annonce : il sera partagé automatiquement avec le transporteur retenu.")}
       </Text>
       {formError ? <Banner tone="danger" message={formError} icon="alert-circle-outline" /> : null}
       <Button title={submitLabel} onPress={() => submit(true)} loading={submitting === 'publish'} disabled={!!submitting} />
       {allowDraft ? (
-        <Button title="Enregistrer en brouillon" variant="secondary" onPress={() => submit(false)} loading={submitting === 'draft'} disabled={!!submitting} />
+        <Button title={t('Enregistrer en brouillon')} variant="secondary" onPress={() => submit(false)} loading={submitting === 'draft'} disabled={!!submitting} />
       ) : null}
     </>
   );

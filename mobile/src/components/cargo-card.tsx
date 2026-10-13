@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { I18nManager, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
 import type { CargoSummary } from '@/types/api';
 import { formatDay, formatPrice, formatWeight } from '@/utils/format';
+import { localName, t, tr } from '@/i18n';
 
 import { CargoStatusBadge } from './status-badge';
 import { Card } from './ui';
@@ -15,7 +16,7 @@ export function Route({ from, to }: { from: string; to: string }) {
       <Text style={styles.city} numberOfLines={1}>
         {from}
       </Text>
-      <Ionicons name="arrow-forward" size={16} color={Colors.accent} />
+      <Ionicons name={I18nManager.isRTL ? 'arrow-back' : 'arrow-forward'} size={16} color={Colors.accent} />
       <Text style={styles.city} numberOfLines={1}>
         {to}
       </Text>
@@ -28,7 +29,7 @@ export function CargoCard({ cargo, onPress, showStatus }: { cargo: CargoSummary;
     <Card onPress={onPress}>
       <View style={styles.top}>
         <View style={{ flex: 1, gap: 4 }}>
-          <Route from={cargo.origin_city.name_fr} to={cargo.destination_city.name_fr} />
+          <Route from={localName(cargo.origin_city)} to={localName(cargo.destination_city)} />
           <Text style={styles.title} numberOfLines={1}>
             {cargo.title}
           </Text>
@@ -38,21 +39,21 @@ export function CargoCard({ cargo, onPress, showStatus }: { cargo: CargoSummary;
       <View style={styles.meta}>
         <Meta icon="calendar-outline" text={formatDay(cargo.loading_date)} />
         <Meta icon="barbell-outline" text={formatWeight(cargo.weight_kg)} />
-        <Meta icon="bus-outline" text={cargo.truck_type_label} />
+        <Meta icon="bus-outline" text={tr(cargo.truck_type_label)} />
       </View>
       <View style={styles.bottom}>
-        <Text style={styles.price}>{formatPrice(cargo.proposed_price, cargo.currency)}</Text>
+        <Text style={styles.price}>{formatPrice(cargo.agreed_price ?? cargo.proposed_price, cargo.currency)}</Text>
         {showStatus ? (
           <CargoStatusBadge status={cargo.status} />
         ) : (
           <Text style={styles.offers}>
-            {cargo.offers_count} offre{cargo.offers_count > 1 ? 's' : ''}
+            {t('{count} offre(s)', { count: cargo.offers_count })}
           </Text>
         )}
       </View>
       {showStatus && cargo.status === 'published' ? (
         <Text style={styles.offers}>
-          {cargo.offers_count} proposition{cargo.offers_count > 1 ? 's' : ''} en attente
+          {t('{count} proposition(s) en attente', { count: cargo.offers_count })}
         </Text>
       ) : null}
     </Card>

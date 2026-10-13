@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { api } from '@/services/endpoints';
+import { t } from '@/i18n';
 
 export function NotificationBell() {
   const { data } = useQuery({ queryKey: ['notifications', 'unread'], queryFn: api.unreadCount, refetchInterval: 60_000 });
@@ -12,7 +13,7 @@ export function NotificationBell() {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Notifications${count ? `, ${count} non lues` : ''}`}
+      accessibilityLabel={count ? t('Notifications, {count} non lues', { count }) : t('Notifications')}
       onPress={() => router.push('/notifications')}
       hitSlop={10}
       style={styles.wrap}>

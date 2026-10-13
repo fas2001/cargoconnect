@@ -40,14 +40,18 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "CargoConnect a besoin d'accéder à vos photos pour illustrer vos annonces.",
+          "photosPermission": "CargoConnect a besoin d'accÃ©der Ã  vos photos pour illustrer vos annonces.",
           "cameraPermission": "CargoConnect a besoin de l'appareil photo pour photographier la marchandise."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "supportsRTL": true
     }
   }
 }

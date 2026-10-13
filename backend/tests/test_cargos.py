@@ -28,6 +28,11 @@ def test_create_and_publish_in_one_call(client_user, cargo_payload):
 
 
 @pytest.mark.django_db
+def test_driver_cannot_publish_cargo(driver_a, cargo_payload):
+    assert auth(driver_a).post("/api/cargos/", cargo_payload).status_code == 403
+
+
+@pytest.mark.django_db
 def test_contact_info_is_rejected_in_description(client_user, cargo_payload):
     response = auth(client_user).post(
         "/api/cargos/", {**cargo_payload, "description": "Appelez-moi au 06 12 34 56 78"}

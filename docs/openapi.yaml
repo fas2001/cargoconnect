@@ -193,6 +193,7 @@ paths:
             enum:
             - assigned
             - cancelled
+            - completed
             - draft
             - expired
             - published
@@ -200,6 +201,7 @@ paths:
           * `draft` - Brouillon
           * `published` - Publiée
           * `assigned` - Attribuée
+          * `completed` - Livrée
           * `cancelled` - Annulée
           * `expired` - Expirée
         explode: true
@@ -586,38 +588,10 @@ paths:
       operationId: me_driver_profile_retrieve
       description: |-
         GET : profil chauffeur de l'utilisateur.
-        POST : active le rôle chauffeur (crée le profil).
         PATCH : met à jour entreprise / présentation.
+        Le profil est créé à l'inscription d'un compte chauffeur.
       tags:
       - me
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DriverProfile'
-          description: ''
-    post:
-      operationId: me_driver_profile_create
-      description: |-
-        GET : profil chauffeur de l'utilisateur.
-        POST : active le rôle chauffeur (crée le profil).
-        PATCH : met à jour entreprise / présentation.
-      tags:
-      - me
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DriverProfileRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/DriverProfileRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/DriverProfileRequest'
       security:
       - jwtAuth: []
       responses:
@@ -631,8 +605,8 @@ paths:
       operationId: me_driver_profile_partial_update
       description: |-
         GET : profil chauffeur de l'utilisateur.
-        POST : active le rôle chauffeur (crée le profil).
         PATCH : met à jour entreprise / présentation.
+        Le profil est créé à l'inscription d'un compte chauffeur.
       tags:
       - me
       requestBody:
@@ -1466,6 +1440,12 @@ components:
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
           nullable: true
           title: Prix proposé
+        agreed_price:
+          type: string
+          nullable: true
+          description: 'Tarif de l''offre acceptée : visible seulement par le client
+            et le chauffeur retenu.'
+          readOnly: true
         currency:
           type: string
           maxLength: 3
@@ -1531,6 +1511,7 @@ components:
           type: string
           readOnly: true
       required:
+      - agreed_price
       - can_edit
       - category
       - client
@@ -1601,6 +1582,12 @@ components:
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
           nullable: true
           title: Prix proposé
+        agreed_price:
+          type: string
+          nullable: true
+          description: 'Tarif de l''offre acceptée : visible seulement par le client
+            et le chauffeur retenu.'
+          readOnly: true
         currency:
           type: string
           maxLength: 3
@@ -1632,6 +1619,7 @@ components:
           readOnly: true
           title: Créé le
       required:
+      - agreed_price
       - category
       - created_at
       - destination_city
@@ -1678,6 +1666,7 @@ components:
       - draft
       - published
       - assigned
+      - completed
       - cancelled
       - expired
       type: string
@@ -1685,6 +1674,7 @@ components:
         * `draft` - Brouillon
         * `published` - Publiée
         * `assigned` - Attribuée
+        * `completed` - Livrée
         * `cancelled` - Annulée
         * `expired` - Expirée
     CargoWriteRequest:
@@ -1913,18 +1903,6 @@ components:
       - vehicles
       - verification_status
       - verified_at
-    DriverProfileRequest:
-      type: object
-      description: Profil chauffeur tel que le chauffeur le voit lui-même.
-      properties:
-        company_name:
-          type: string
-          title: Entreprise
-          maxLength: 150
-        bio:
-          type: string
-          title: Présentation
-          maxLength: 500
     GoodsCategory:
       type: object
       properties:
@@ -2699,6 +2677,15 @@ components:
           type: string
           writeOnly: true
           minLength: 1
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          writeOnly: true
+          default: client
+        company_name:
+          type: string
+          writeOnly: true
+          maxLength: 150
       required:
       - full_name
       - password
@@ -2827,6 +2814,14 @@ components:
           maxLength: 500
       required:
       - rating
+    RoleEnum:
+      enum:
+      - client
+      - driver
+      type: string
+      description: |-
+        * `client` - client
+        * `driver` - driver
     Shipment:
       type: object
       properties:

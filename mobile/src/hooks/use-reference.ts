@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import type { PickerOption } from '@/components/option-picker';
+import { isArabic, localName, tr } from '@/i18n';
 import { api } from '@/services/endpoints';
 import type { TruckType } from '@/types/api';
 
@@ -16,8 +17,12 @@ export function useReferenceData() {
     isLoading: cities.isLoading || categories.isLoading || truckTypes.isLoading,
     error: cities.error ?? categories.error ?? truckTypes.error,
     refetch: () => Promise.all([cities.refetch(), categories.refetch(), truckTypes.refetch()]),
-    cityOptions: (cities.data ?? []).map<PickerOption<number>>((c) => ({ value: c.id, label: c.name_fr, sublabel: c.name_ar })),
-    categoryOptions: (categories.data ?? []).map<PickerOption<number>>((c) => ({ value: c.id, label: c.name_fr })),
-    truckTypeOptions: (truckTypes.data ?? []).map<PickerOption<TruckType>>((t) => ({ value: t.value, label: t.label })),
+    cityOptions: (cities.data ?? []).map<PickerOption<number>>((c) => ({
+      value: c.id,
+      label: localName(c),
+      sublabel: isArabic() ? c.name_fr : c.name_ar,
+    })),
+    categoryOptions: (categories.data ?? []).map<PickerOption<number>>((c) => ({ value: c.id, label: localName(c) })),
+    truckTypeOptions: (truckTypes.data ?? []).map<PickerOption<TruckType>>((type) => ({ value: type.value, label: tr(type.label) })),
   };
 }

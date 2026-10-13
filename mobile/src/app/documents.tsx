@@ -7,7 +7,8 @@ import { OptionPicker } from '@/components/option-picker';
 import { VerificationBadge } from '@/components/status-badge';
 import { Banner, Button, Card, ErrorState, Loading, Screen, SectionTitle, textStyles } from '@/components/ui';
 import { Colors, FontSize } from '@/constants/theme';
-import { fr } from '@/i18n/fr';
+import { t, tr } from '@/i18n';
+import { documentTypes } from '@/i18n/labels';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import { assetToFormData } from '@/services/upload';
@@ -26,7 +27,7 @@ export default function Documents() {
     if (source === 'camera') {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        setError("L'accès à l'appareil photo a été refusé.");
+        setError(t("L'accès à l'appareil photo a été refusé."));
         return;
       }
     }
@@ -49,24 +50,24 @@ export default function Documents() {
 
   return (
     <Screen edges={['bottom']}>
-      <Banner message="Vos justificatifs sont privés : seule l'équipe CargoConnect y a accès pour vérifier votre profil." icon="lock-closed-outline" />
+      <Banner message={t("Vos justificatifs sont privés : seule l'équipe CargoConnect y a accès pour vérifier votre profil.")} icon="lock-closed-outline" />
 
       {profile.data.documents.map((d) => (
         <Card key={d.id}>
           <View style={styles.row}>
-            <Text style={styles.title}>{d.doc_type_label}</Text>
+            <Text style={styles.title}>{tr(d.doc_type_label)}</Text>
             <VerificationBadge status={d.status} />
           </View>
-          <Text style={textStyles.caption}>Envoyé le {formatDateTime(d.created_at)}</Text>
+          <Text style={textStyles.caption}>{t('Envoyé le {date}', { date: formatDateTime(d.created_at) })}</Text>
           {d.review_note ? <Text style={textStyles.secondary}>{d.review_note}</Text> : null}
         </Card>
       ))}
 
-      <SectionTitle>Ajouter un justificatif</SectionTitle>
+      <SectionTitle>{t('Ajouter un justificatif')}</SectionTitle>
       {error ? <Banner tone="danger" message={error} /> : null}
-      <OptionPicker label="Type de document" placeholder="Choisir" options={fr.documentTypes} value={docType} onChange={setDocType} />
-      <Button title="Prendre une photo" icon="camera-outline" disabled={!docType} loading={uploading} onPress={() => upload('camera')} />
-      <Button title="Choisir dans la galerie" variant="secondary" icon="images-outline" disabled={!docType || uploading} onPress={() => upload('library')} />
+      <OptionPicker label={t('Type de document')} placeholder={t('Choisir')} options={documentTypes()} value={docType} onChange={setDocType} />
+      <Button title={t('Prendre une photo')} icon="camera-outline" disabled={!docType} loading={uploading} onPress={() => upload('camera')} />
+      <Button title={t('Choisir dans la galerie')} variant="secondary" icon="images-outline" disabled={!docType || uploading} onPress={() => upload('library')} />
     </Screen>
   );
 }

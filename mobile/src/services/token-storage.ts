@@ -25,7 +25,7 @@ async function removeItem(key: string): Promise<void> {
   await SecureStore.deleteItemAsync(key);
 }
 
-const KEYS = { access: 'cc.access', refresh: 'cc.refresh', role: 'cc.activeRole' } as const;
+const KEYS = { access: 'cc.access', refresh: 'cc.refresh', language: 'cc.language' } as const;
 
 export const tokenStorage = {
   getAccess: () => getItem(KEYS.access),
@@ -37,7 +37,7 @@ export const tokenStorage = {
   async clear() {
     await Promise.all([removeItem(KEYS.access), removeItem(KEYS.refresh)]);
   },
-  getRole: () => getItem(KEYS.role),
-  setRole: (role: string) => setItem(KEYS.role, role),
-  clearRole: () => removeItem(KEYS.role),
+  // Préférence d'affichage : conservée après la déconnexion.
+  getLanguage: () => getItem(KEYS.language),
+  setLanguage: (language: string) => setItem(KEYS.language, language),
 };

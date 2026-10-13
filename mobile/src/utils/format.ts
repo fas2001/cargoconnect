@@ -1,21 +1,24 @@
+import { isArabic, locale, t } from '@/i18n';
+
 const TIME_ZONE = 'Africa/Casablanca';
+const dateLocale = () => (isArabic() ? 'ar-MA' : 'fr-FR');
 
 export function formatPrice(amount: string | number | null | undefined, currency = 'MAD'): string {
-  if (amount === null || amount === undefined || amount === '') return 'Prix à négocier';
+  if (amount === null || amount === undefined || amount === '') return t('Prix à négocier');
   const value = typeof amount === 'string' ? Number(amount) : amount;
-  return `${value.toLocaleString('fr-MA', { maximumFractionDigits: 0 })} ${currency === 'MAD' ? 'DH' : currency}`;
+  return `${value.toLocaleString(locale(), { maximumFractionDigits: 0 })} ${currency === 'MAD' ? t('DH') : currency}`;
 }
 
 export function formatWeight(kg: string | number): string {
   const value = typeof kg === 'string' ? Number(kg) : kg;
-  if (value >= 1000) return `${(value / 1000).toLocaleString('fr-MA', { maximumFractionDigits: 1 })} t`;
-  return `${value.toLocaleString('fr-MA', { maximumFractionDigits: 0 })} kg`;
+  if (value >= 1000) return `${(value / 1000).toLocaleString(locale(), { maximumFractionDigits: 1 })} ${t('t')}`;
+  return `${value.toLocaleString(locale(), { maximumFractionDigits: 0 })} ${t('kg')}`;
 }
 
 /** Date seule (AAAA-MM-JJ) : affichée sans conversion de fuseau. */
 export function formatDay(isoDate: string): string {
   const [y, m, d] = isoDate.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('fr-FR', {
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(dateLocale(), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -24,7 +27,7 @@ export function formatDay(isoDate: string): string {
 }
 
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('fr-FR', {
+  return new Date(iso).toLocaleString(dateLocale(), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet } from 'react-native';
+import { FlatList, ScrollView, StyleSheet } from 'react-native';
 
 import { CargoCard } from '@/components/cargo-card';
 import { Button, Chip, EmptyState, ErrorState, Loading } from '@/components/ui';
@@ -9,13 +9,15 @@ import { Colors, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import type { CargoStatus } from '@/types/api';
+import { t, type TKey } from '@/i18n';
+import { TruckLoader } from '@/components/truck-loader';
 
-const FILTERS: { label: string; statuses?: CargoStatus[] }[] = [
+const FILTERS: { label: TKey; statuses?: CargoStatus[] }[] = [
   { label: 'Toutes' },
   { label: 'Ouvertes', statuses: ['published'] },
   { label: 'Brouillons', statuses: ['draft'] },
   { label: 'Attribuées', statuses: ['assigned'] },
-  { label: 'Terminées', statuses: ['cancelled', 'expired'] },
+  { label: 'Terminées', statuses: ['completed', 'cancelled', 'expired'] },
 ];
 
 export default function MyCargos() {
@@ -39,7 +41,7 @@ export default function MyCargos() {
       ListHeaderComponent={
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {FILTERS.map((f, i) => (
-            <Chip key={f.label} label={f.label} selected={i === filter} onPress={() => setFilter(i)} />
+            <Chip key={f.label} label={t(f.label)} selected={i === filter} onPress={() => setFilter(i)} />
           ))}
         </ScrollView>
       }
@@ -53,15 +55,15 @@ export default function MyCargos() {
           <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />
         ) : (
           <EmptyState
-            title="Aucune annonce"
-            action={<Button title="Publier une cargaison" onPress={() => router.push('/publish')} />}
+            title={t('Aucune annonce')}
+            action={<Button title={t('Publier une cargaison')} onPress={() => router.push('/publish')} />}
           />
         )
       }
       refreshing={query.isRefetching}
       onRefresh={() => query.refetch()}
       onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && query.fetchNextPage()}
-      ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator /> : null}
+      ListFooterComponent={query.isFetchingNextPage ? <TruckLoader size="small" label={false} /> : null}
     />
   );
 }

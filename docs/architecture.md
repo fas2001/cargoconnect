@@ -14,9 +14,10 @@ User ─┬─< Cargo ──< Offer >── DriverProfile ──< Vehicle
 City, GoodsCategory : référentiels (données initiales dans une migration)
 ```
 
-- **Un seul compte par personne.** Tout utilisateur peut publier (rôle client). Le rôle chauffeur
-  correspond à l'existence d'un `DriverProfile`. Le rôle actif est un choix d'interface, mémorisé
-  sur le téléphone.
+- **Un seul compte par personne, avec un seul rôle choisi à l'inscription** : client (expéditeur) ou
+  chauffeur. Un compte chauffeur est un compte qui a un `DriverProfile`, créé à l'inscription. Seuls
+  les clients publient des annonces, et seuls les chauffeurs proposent des tarifs. L'application
+  ouvre directement l'espace correspondant au rôle.
 - Identifiants UUID, prix en `Decimal` avec devise explicite (`MAD`), dates en UTC et affichage
   dans le fuseau `Africa/Casablanca`.
 - Les villes viennent d'une table de référence, ce qui fiabilise les filtres de recherche.

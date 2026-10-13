@@ -13,6 +13,7 @@ import type {
   Option,
   OwnOffer,
   Paginated,
+  RegisterData,
   Shipment,
   ShipmentStatus,
   ShipmentSummary,
@@ -35,7 +36,7 @@ export type CargoFilters = {
 
 export const api = {
   // Authentification
-  register: (body: { phone: string; full_name: string; email?: string; password: string }) =>
+  register: (body: RegisterData) =>
     apiRequest<AuthResponse>('/auth/register/', { method: 'POST', body, auth: false }),
   login: (body: { phone: string; password: string }) =>
     apiRequest<AuthResponse>('/auth/login/', { method: 'POST', body, auth: false }),
@@ -51,8 +52,6 @@ export const api = {
   changePassword: (body: { current_password: string; new_password: string }) =>
     apiRequest<void>('/me/password/', { method: 'POST', body }),
   verifyPhone: (code: string) => apiRequest<User>('/me/verify-phone/', { method: 'POST', body: { code } }),
-  activateDriver: (body: { company_name?: string; bio?: string }) =>
-    apiRequest<DriverProfile>('/me/driver-profile/', { method: 'POST', body }),
   driverProfile: () => apiRequest<DriverProfile>('/me/driver-profile/'),
   vehicles: () => apiRequest<Paginated<Vehicle>>('/me/vehicles/'),
   addVehicle: (body: { truck_type: TruckType; capacity_kg: string; registration_number: string; brand_model?: string }) =>

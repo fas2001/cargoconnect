@@ -1,17 +1,19 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet } from 'react-native';
+import { FlatList, ScrollView, StyleSheet } from 'react-native';
 
 import { ShipmentCard } from '@/components/shipment-card';
 import { Chip, EmptyState, ErrorState, Loading } from '@/components/ui';
 import { Colors, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
+import { t, type TKey } from '@/i18n';
+import { TruckLoader } from '@/components/truck-loader';
 
 const SCOPES = [
   { label: 'En cours', scope: 'active' as const },
   { label: 'Historique', scope: 'past' as const },
-];
+] as const satisfies readonly { label: TKey; scope: string }[];
 
 export default function Missions() {
   const [index, setIndex] = useState(0);
@@ -33,7 +35,7 @@ export default function Missions() {
       ListHeaderComponent={
         <ScrollView horizontal contentContainerStyle={styles.chips}>
           {SCOPES.map((s, i) => (
-            <Chip key={s.label} label={s.label} selected={i === index} onPress={() => setIndex(i)} />
+            <Chip key={s.label} label={t(s.label)} selected={i === index} onPress={() => setIndex(i)} />
           ))}
         </ScrollView>
       }
@@ -44,13 +46,13 @@ export default function Missions() {
         ) : query.error ? (
           <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />
         ) : (
-          <EmptyState icon="navigate-outline" title="Aucune mission" message="Vos transports confirmés apparaîtront ici." />
+          <EmptyState icon="navigate-outline" title={t('Aucune mission')} message={t('Vos transports confirmés apparaîtront ici.')} />
         )
       }
       refreshing={query.isRefetching}
       onRefresh={() => query.refetch()}
       onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && query.fetchNextPage()}
-      ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator /> : null}
+      ListFooterComponent={query.isFetchingNextPage ? <TruckLoader size="small" label={false} /> : null}
     />
   );
 }

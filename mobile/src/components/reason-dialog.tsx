@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
 
 import { Button, modalAnimation, TextField } from './ui';
 
@@ -16,7 +17,7 @@ type Props = {
 };
 
 /** Petite fenêtre pour saisir un motif (annulation, litige...). Fonctionne sur Android, iOS et web. */
-export function ReasonDialog({ visible, title, label = 'Motif', confirmLabel, required, onCancel, onConfirm }: Props) {
+export function ReasonDialog({ visible, title, label = t('Motif'), confirmLabel, required, onCancel, onConfirm }: Props) {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +38,7 @@ export function ReasonDialog({ visible, title, label = 'Motif', confirmLabel, re
           <Text style={styles.title}>{title}</Text>
           <TextField label={label} multiline value={reason} onChangeText={setReason} maxLength={500} />
           <Button title={confirmLabel} variant="danger" loading={loading} disabled={required && !reason.trim()} onPress={confirm} />
-          <Button title="Retour" variant="ghost" onPress={onCancel} disabled={loading} />
+          <Button title={t('Retour')} variant="ghost" onPress={onCancel} disabled={loading} />
         </View>
       </View>
     </Modal>

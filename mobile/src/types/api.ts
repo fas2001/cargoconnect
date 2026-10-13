@@ -2,7 +2,7 @@
 
 export type Role = 'client' | 'driver';
 
-export type CargoStatus = 'draft' | 'published' | 'assigned' | 'cancelled' | 'expired';
+export type CargoStatus = 'draft' | 'published' | 'assigned' | 'completed' | 'cancelled' | 'expired';
 export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'closed';
 export type ShipmentStatus =
   | 'confirmed'
@@ -46,6 +46,15 @@ export type User = {
 };
 
 export type AuthResponse = { access: string; refresh: string; user: User };
+
+export type RegisterData = {
+  phone: string;
+  full_name: string;
+  email?: string;
+  password: string;
+  role: Role;
+  company_name?: string;
+};
 
 export type City = { id: number; slug: string; name_fr: string; name_ar: string; region: string };
 export type GoodsCategory = { id: number; slug: string; name_fr: string; name_ar: string };
@@ -106,6 +115,8 @@ export type CargoSummary = {
   destination_city: City;
   loading_date: string;
   proposed_price: string | null;
+  /** Tarif de l'offre acceptée (visible par le client et le chauffeur retenu). */
+  agreed_price: string | null;
   currency: string;
   status: CargoStatus;
   status_label: string;

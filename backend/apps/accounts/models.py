@@ -36,8 +36,8 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     """
-    Un seul compte par personne. Tout utilisateur peut publier des cargaisons (rôle client) ;
-    le rôle chauffeur est activé par la création d'un DriverProfile.
+    Un seul compte par personne et un seul rôle, choisi à l'inscription : client (publie des
+    cargaisons) ou chauffeur (le compte a alors un DriverProfile).
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -67,7 +67,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def roles(self) -> list[str]:
-        return ["client", "driver"] if self.is_driver else ["client"]
+        return ["driver"] if self.is_driver else ["client"]
 
     @property
     def public_name(self) -> str:

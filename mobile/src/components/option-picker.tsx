@@ -4,6 +4,7 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
 
 import { modalAnimation, SelectButton } from './ui';
 
@@ -54,14 +55,14 @@ export function OptionPicker<V extends string | number>({
         <SafeAreaView style={styles.modal}>
           <View style={styles.header}>
             <Text style={styles.title}>{label}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Fermer" onPress={() => setOpen(false)} hitSlop={12}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Fermer')} onPress={() => setOpen(false)} hitSlop={12}>
               <Ionicons name="close" size={26} color={Colors.text} />
             </Pressable>
           </View>
           {searchable ? (
             <TextInput
               autoFocus
-              placeholder="Rechercher..."
+              placeholder={t('Rechercher...')}
               placeholderTextColor={Colors.textMuted}
               value={query}
               onChangeText={setQuery}
@@ -75,7 +76,7 @@ export function OptionPicker<V extends string | number>({
             ListHeaderComponent={
               allowClear && value != null ? (
                 <Pressable style={styles.row} onPress={() => choose(null)}>
-                  <Text style={[styles.rowLabel, { color: Colors.primary }]}>Tous / effacer</Text>
+                  <Text style={[styles.rowLabel, { color: Colors.primary }]}>{t('Tous / effacer')}</Text>
                 </Pressable>
               ) : null
             }

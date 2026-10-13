@@ -41,14 +41,23 @@ def test_register_rejects_duplicate_phone(client_user):
 
 
 @pytest.mark.django_db
-def test_activate_driver_role(client_user):
+def test_register_as_driver_creates_pending_profile():
+    api = APIClient()
+    response = api.post(
+        "/api/auth/register/",
+        {"phone": "0655555555", "full_name": "Youssef Routier", "password": PASSWORD, "role": "driver", "company_name": "Trans Atlas"},
+    )
+    assert response.status_code == 201, response.data
+    assert response.data["user"]["roles"] == ["driver"]
+    assert response.data["user"]["driver_profile"]["company_name"] == "Trans Atlas"
+    assert response.data["user"]["driver_profile"]["verification_status"] == "pending"
+
+
+@pytest.mark.django_db
+def test_client_cannot_become_driver(client_user):
     api = auth(client_user)
-    response = api.post("/api/me/driver-profile/", {"company_name": "Trans Atlas"})
-    assert response.status_code == 201
-    assert response.data["verification_status"] == "pending"
-    client_user.refresh_from_db()
-    assert api.get("/api/me/").data["roles"] == ["client", "driver"]
-    assert api.post("/api/me/driver-profile/", {}).status_code == 409
+    assert api.post("/api/me/driver-profile/", {"company_name": "Trans Atlas"}).status_code == 405
+    assert api.get("/api/me/").data["roles"] == ["client"]
 
 
 @pytest.mark.django_db

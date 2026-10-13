@@ -7,6 +7,5 @@ export default function Index() {
   const auth = useAuth();
   if (auth.status === 'loading') return null;
   if (auth.status === 'signedOut') return <Redirect href="/welcome" />;
-  if (!auth.activeRole) return <Redirect href="/role" />;
   return <Redirect href={auth.activeRole === 'driver' ? '/cargos-market' : '/home'} />;
 }

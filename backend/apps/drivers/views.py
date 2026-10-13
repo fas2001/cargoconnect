@@ -1,8 +1,6 @@
-from rest_framework import generics, mixins, parsers, status, viewsets
+from rest_framework import generics, mixins, parsers, viewsets
 from rest_framework.exceptions import NotFound
-from rest_framework.response import Response
 
-from apps.common.exceptions import BusinessRuleError
 from apps.common.permissions import IsDriver
 from apps.vehicles.models import Vehicle
 
@@ -13,26 +11,18 @@ from .serializers import DriverDocumentSerializer, DriverProfileSerializer, Publ
 class MyDriverProfileView(generics.RetrieveUpdateAPIView):
     """
     GET : profil chauffeur de l'utilisateur.
-    POST : active le rôle chauffeur (crée le profil).
     PATCH : met à jour entreprise / présentation.
+    Le profil est créé à l'inscription d'un compte chauffeur.
     """
 
     serializer_class = DriverProfileSerializer
-    http_method_names = ["get", "post", "patch"]
+    http_method_names = ["get", "patch"]
 
     def get_object(self):
         try:
             return self.request.user.driver_profile
         except DriverProfile.DoesNotExist as exc:
-            raise NotFound("Aucun profil chauffeur. Activez d'abord l'espace chauffeur.") from exc
-
-    def post(self, request):
-        if request.user.is_driver:
-            raise BusinessRuleError("L'espace chauffeur est déjà activé.", code="already_driver")
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            raise NotFound("Ce compte n'est pas un compte chauffeur.") from exc
 
 
 class MyDocumentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):

@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@/constants/theme';
 import type { ShipmentSummary } from '@/types/api';
 import { formatDay, formatPrice } from '@/utils/format';
+import { localName, t } from '@/i18n';
 
 import { Route } from './cargo-card';
 import { ShipmentStatusBadge } from './status-badge';
@@ -14,14 +15,14 @@ export function ShipmentCard({ shipment }: { shipment: ShipmentSummary }) {
   return (
     <Card onPress={() => router.push({ pathname: '/shipment/[id]', params: { id: shipment.id } })}>
       <View style={styles.row}>
-        <Route from={cargo.origin_city.name_fr} to={cargo.destination_city.name_fr} />
+        <Route from={localName(cargo.origin_city)} to={localName(cargo.destination_city)} />
         <ShipmentStatusBadge status={shipment.status} />
       </View>
       <Text style={styles.title} numberOfLines={1}>
         {cargo.title}
       </Text>
       <View style={styles.row}>
-        <Text style={styles.meta}>Chargement : {formatDay(cargo.loading_date)}</Text>
+        <Text style={styles.meta}>{t('Chargement : {date}', { date: formatDay(cargo.loading_date) })}</Text>
         <Text style={styles.price}>{formatPrice(shipment.agreed_price, shipment.currency)}</Text>
       </View>
     </Card>

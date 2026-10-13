@@ -1,17 +1,18 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { isArabic, t } from '@/i18n';
 import { formatDay, toIsoDay } from '@/utils/format';
 
-import { Button, modalAnimation, SelectButton } from './ui';
+import { Button, Chevron, modalAnimation, SelectButton } from './ui';
 
-const MONTHS = [
-  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
-];
-const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const MONTHS = {
+  fr: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+  // Noms des mois utilisés au Maroc.
+  ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'ماي', 'يونيو', 'يوليوز', 'غشت', 'شتنبر', 'أكتوبر', 'نونبر', 'دجنبر'],
+};
+const WEEKDAYS = { fr: ['L', 'M', 'M', 'J', 'V', 'S', 'D'], ar: ['ن', 'ث', 'ر', 'خ', 'ج', 'س', 'ح'] };
 
 type Props = {
   label: string;
@@ -29,7 +30,7 @@ export function DateField({ label, value, onChange, minimumDate, error }: Props)
     <>
       <SelectButton
         label={label}
-        placeholder="Choisir une date"
+        placeholder={t('Choisir une date')}
         value={value ? formatDay(value) : undefined}
         onPress={() => setOpen(true)}
         icon="calendar-outline"
@@ -47,7 +48,7 @@ export function DateField({ label, value, onChange, minimumDate, error }: Props)
                 setOpen(false);
               }}
             />
-            <Button title="Fermer" variant="ghost" onPress={() => setOpen(false)} />
+            <Button title={t('Fermer')} variant="ghost" onPress={() => setOpen(false)} />
           </Pressable>
         </Pressable>
       </Modal>
@@ -77,28 +78,28 @@ function Calendar({ value, minimumDate, onSelect }: { value: string | null; mini
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Mois précédent"
+          accessibilityLabel={t('Mois précédent')}
           disabled={!canGoBack}
           onPress={() => setMonth(new Date(year, monthIndex - 1, 1))}
           hitSlop={10}
           style={[styles.nav, !canGoBack && { opacity: 0.3 }]}>
-          <Ionicons name="chevron-back" size={22} color={Colors.primary} />
+          <Chevron direction="back" size={22} color={Colors.primary} />
         </Pressable>
         <Text style={styles.monthTitle}>
-          {MONTHS[monthIndex]} {year}
+          {MONTHS[isArabic() ? 'ar' : 'fr'][monthIndex]} {year}
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Mois suivant"
+          accessibilityLabel={t('Mois suivant')}
           onPress={() => setMonth(new Date(year, monthIndex + 1, 1))}
           hitSlop={10}
           style={styles.nav}>
-          <Ionicons name="chevron-forward" size={22} color={Colors.primary} />
+          <Chevron size={22} color={Colors.primary} />
         </Pressable>
       </View>
 
       <View style={styles.row}>
-        {WEEKDAYS.map((d, i) => (
+        {WEEKDAYS[isArabic() ? 'ar' : 'fr'].map((d, i) => (
           <Text key={i} style={[styles.cell, styles.weekday]}>
             {d}
           </Text>

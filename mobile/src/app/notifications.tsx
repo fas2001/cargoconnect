@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, EmptyState, ErrorState, Loading, textStyles } from '@/components/ui';
 import { Colors, FontSize, Spacing } from '@/constants/theme';
@@ -8,6 +8,8 @@ import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import type { AppNotification } from '@/types/api';
 import { formatDateTime } from '@/utils/format';
+import { t, tr } from '@/i18n';
+import { TruckLoader } from '@/components/truck-loader';
 
 export default function Notifications() {
   const queryClient = useQueryClient();
@@ -33,7 +35,7 @@ export default function Notifications() {
         options={{
           headerRight: () =>
             items.some((n) => !n.is_read) ? (
-              <Button title="Tout lire" variant="ghost" onPress={() => api.markAllRead().then(refresh)} />
+              <Button title={t('Tout lire')} variant="ghost" onPress={() => api.markAllRead().then(refresh)} />
             ) : null,
         }}
       />
@@ -46,9 +48,9 @@ export default function Notifications() {
           <Card onPress={() => open(item)} style={!item.is_read ? styles.unread : undefined}>
             <View style={styles.row}>
               {!item.is_read ? <View style={styles.dot} /> : null}
-              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.title}>{tr(item.title)}</Text>
             </View>
-            <Text style={textStyles.secondary}>{item.body}</Text>
+            <Text style={textStyles.secondary}>{tr(item.body)}</Text>
             <Text style={textStyles.caption}>{formatDateTime(item.created_at)}</Text>
           </Card>
         )}
@@ -58,13 +60,13 @@ export default function Notifications() {
           ) : query.error ? (
             <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />
           ) : (
-            <EmptyState icon="notifications-outline" title="Aucune notification" />
+            <EmptyState icon="notifications-outline" title={t('Aucune notification')} />
           )
         }
         refreshing={query.isRefetching}
         onRefresh={() => query.refetch()}
         onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && query.fetchNextPage()}
-        ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator /> : null}
+        ListFooterComponent={query.isFetchingNextPage ? <TruckLoader size="small" label={false} /> : null}
       />
     </>
   );

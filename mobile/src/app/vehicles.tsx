@@ -11,6 +11,7 @@ import { api } from '@/services/endpoints';
 import type { TruckType } from '@/types/api';
 import { confirmAction } from '@/utils/confirm';
 import { formatWeight } from '@/utils/format';
+import { t, tr } from '@/i18n';
 
 export default function Vehicles() {
   const queryClient = useQueryClient();
@@ -53,7 +54,7 @@ export default function Vehicles() {
   };
 
   const remove = async (id: string) => {
-    if (!(await confirmAction('Retirer ce véhicule ?', 'Il ne sera plus proposé dans vos offres.', 'Retirer'))) return;
+    if (!(await confirmAction(t('Retirer ce véhicule ?'), t('Il ne sera plus proposé dans vos offres.'), t('Retirer')))) return;
     try {
       await api.removeVehicle(id);
       await refresh();
@@ -68,29 +69,29 @@ export default function Vehicles() {
 
   return (
     <Screen edges={['bottom']}>
-      {active.length === 0 ? <EmptyState icon="bus-outline" title="Aucun véhicule" message="Ajoutez votre camion pour proposer vos tarifs." /> : null}
+      {active.length === 0 ? <EmptyState icon="bus-outline" title={t('Aucun véhicule')} message={t('Ajoutez votre camion pour proposer vos tarifs.')} /> : null}
       {active.map((v) => (
         <Card key={v.id}>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.title}>{v.truck_type_label}</Text>
+              <Text style={styles.title}>{tr(v.truck_type_label)}</Text>
               <Text style={textStyles.secondary}>
                 {v.registration_number} · {formatWeight(v.capacity_kg)}
                 {v.brand_model ? ` · ${v.brand_model}` : ''}
               </Text>
             </View>
-            <Button title="Retirer" variant="ghost" onPress={() => remove(v.id)} />
+            <Button title={t('Retirer')} variant="ghost" onPress={() => remove(v.id)} />
           </View>
         </Card>
       ))}
 
-      <SectionTitle>Ajouter un véhicule</SectionTitle>
+      <SectionTitle>{t('Ajouter un véhicule')}</SectionTitle>
       {error ? <Banner tone="danger" message={error} /> : null}
-      <OptionPicker label="Type de camion" placeholder="Choisir" options={ref.truckTypeOptions} value={form.truck_type} onChange={(v) => setForm((f) => ({ ...f, truck_type: v }))} error={errors.truck_type} />
-      <TextField label="Capacité (kg)" keyboardType="number-pad" value={form.capacity_kg} onChangeText={(t) => setForm((f) => ({ ...f, capacity_kg: t.replace(/[^\d]/g, '') }))} error={errors.capacity_kg} />
-      <TextField label="Immatriculation" placeholder="12345-A-6" autoCapitalize="characters" value={form.registration_number} onChangeText={(t) => setForm((f) => ({ ...f, registration_number: t }))} error={errors.registration_number} />
-      <TextField label="Marque / modèle (facultatif)" value={form.brand_model} onChangeText={(t) => setForm((f) => ({ ...f, brand_model: t }))} />
-      <Button title="Ajouter" loading={loading} disabled={!form.truck_type || !form.capacity_kg || !form.registration_number} onPress={add} />
+      <OptionPicker label={t('Type de camion')} placeholder={t('Choisir')} options={ref.truckTypeOptions} value={form.truck_type} onChange={(v) => setForm((f) => ({ ...f, truck_type: v }))} error={errors.truck_type} />
+      <TextField label={t('Capacité (kg)')} keyboardType="number-pad" value={form.capacity_kg} onChangeText={(text) => setForm((f) => ({ ...f, capacity_kg: text.replace(/[^\d]/g, '') }))} error={errors.capacity_kg} />
+      <TextField label={t('Immatriculation')} placeholder="12345-A-6" autoCapitalize="characters" value={form.registration_number} onChangeText={(text) => setForm((f) => ({ ...f, registration_number: text }))} error={errors.registration_number} />
+      <TextField label={t('Marque / modèle (facultatif)')} value={form.brand_model} onChangeText={(text) => setForm((f) => ({ ...f, brand_model: text }))} />
+      <Button title={t('Ajouter')} loading={loading} disabled={!form.truck_type || !form.capacity_kg || !form.registration_number} onPress={add} />
     </Screen>
   );
 }

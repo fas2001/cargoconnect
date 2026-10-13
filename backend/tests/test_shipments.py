@@ -35,6 +35,8 @@ def test_full_happy_path_with_history_and_reviews(client_user, driver_a, shipmen
     assert done.status_code == 201
     assert [e["to_status"] for e in done.data["events"]] == ["confirmed", "loaded", "in_transit", "delivered", "completed"]
     assert done.data["can_review"] is True
+    shipment.cargo.refresh_from_db()
+    assert shipment.cargo.status == CargoStatus.COMPLETED
 
     review = auth(client_user).post(f"/api/shipments/{shipment.pk}/review/", {"rating": 5, "comment": "Ponctuel"})
     assert review.status_code == 201
@@ -91,4 +93,5 @@ def test_periodic_tasks_autocomplete_and_expire(client_user, driver_a, shipment,
     shipment.refresh_from_db()
     assert shipment.status == ShipmentStatus.COMPLETED
     assert shipment.events.last().actor is None
+    assert shipment.cargo.status == CargoStatus.COMPLETED
     assert Cargo.objects.get(pk=stale["id"]).status == CargoStatus.EXPIRED

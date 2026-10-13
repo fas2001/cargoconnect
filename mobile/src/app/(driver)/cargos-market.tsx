@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CargoCard } from '@/components/cargo-card';
 import { OptionPicker } from '@/components/option-picker';
@@ -12,6 +12,8 @@ import { useReferenceData } from '@/hooks/use-reference';
 import { errorMessage } from '@/services/api';
 import { api, type CargoFilters } from '@/services/endpoints';
 import type { TruckType } from '@/types/api';
+import { t } from '@/i18n';
+import { TruckLoader } from '@/components/truck-loader';
 
 export default function CargosMarket() {
   const ref = useReferenceData();
@@ -45,15 +47,15 @@ export default function CargosMarket() {
         <View style={{ gap: Spacing.sm }}>
           <Pressable style={styles.filterToggle} onPress={() => setShowFilters((s) => !s)} accessibilityRole="button">
             <Ionicons name="options-outline" size={20} color={Colors.primary} />
-            <Text style={styles.filterText}>Filtres{activeCount ? ` (${activeCount})` : ''}</Text>
-            <Text style={styles.count}>{query.data ? `${query.data.pages[0].count} annonce(s)` : ''}</Text>
+            <Text style={styles.filterText}>{activeCount ? t('Filtres ({count})', { count: activeCount }) : t('Filtres')}</Text>
+            <Text style={styles.count}>{query.data ? t('{count} annonce(s)', { count: query.data.pages[0].count }) : ''}</Text>
           </Pressable>
           {showFilters ? (
             <Card>
-              <OptionPicker label="Départ" placeholder="Toutes les villes" searchable allowClear options={ref.cityOptions} value={filters.origin} onChange={(v) => setFilters((f) => ({ ...f, origin: v ?? undefined }))} />
-              <OptionPicker label="Destination" placeholder="Toutes les villes" searchable allowClear options={ref.cityOptions} value={filters.destination} onChange={(v) => setFilters((f) => ({ ...f, destination: v ?? undefined }))} />
-              <OptionPicker label="Type de camion" placeholder="Tous" allowClear options={ref.truckTypeOptions} value={filters.truck} onChange={(v) => setFilters((f) => ({ ...f, truck: v ?? undefined }))} />
-              {activeCount ? <Button title="Effacer les filtres" variant="ghost" onPress={() => setFilters({})} /> : null}
+              <OptionPicker label={t('Départ')} placeholder={t('Toutes les villes')} searchable allowClear options={ref.cityOptions} value={filters.origin} onChange={(v) => setFilters((f) => ({ ...f, origin: v ?? undefined }))} />
+              <OptionPicker label={t('Destination')} placeholder={t('Toutes les villes')} searchable allowClear options={ref.cityOptions} value={filters.destination} onChange={(v) => setFilters((f) => ({ ...f, destination: v ?? undefined }))} />
+              <OptionPicker label={t('Type de camion')} placeholder={t('Tous')} allowClear options={ref.truckTypeOptions} value={filters.truck} onChange={(v) => setFilters((f) => ({ ...f, truck: v ?? undefined }))} />
+              {activeCount ? <Button title={t('Effacer les filtres')} variant="ghost" onPress={() => setFilters({})} /> : null}
             </Card>
           ) : null}
         </View>
@@ -67,13 +69,13 @@ export default function CargosMarket() {
         ) : query.error ? (
           <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />
         ) : (
-          <EmptyState icon="search-outline" title="Aucune cargaison" message="Aucune annonce ne correspond à vos critères pour le moment." />
+          <EmptyState icon="search-outline" title={t('Aucune cargaison')} message={t('Aucune annonce ne correspond à vos critères pour le moment.')} />
         )
       }
       refreshing={query.isRefetching}
       onRefresh={() => query.refetch()}
       onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && query.fetchNextPage()}
-      ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator /> : null}
+      ListFooterComponent={query.isFetchingNextPage ? <TruckLoader size="small" label={false} /> : null}
     />
   );
 }

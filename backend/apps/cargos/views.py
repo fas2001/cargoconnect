@@ -55,7 +55,9 @@ class CargoViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Up
 
     def _base_queryset(self):
         return (
-            Cargo.objects.select_related("category", "origin_city", "destination_city", "client")
+            Cargo.objects.select_related(
+                "category", "origin_city", "destination_city", "client", "shipment__driver"
+            )
             .prefetch_related("photos")
             .annotate(pending_offers_count=Count("offers", filter=Q(offers__status=OfferStatus.PENDING)))
         )
@@ -94,6 +96,8 @@ class CargoViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Up
 
     @extend_schema(responses={201: CargoDetailSerializer})
     def create(self, request, *args, **kwargs):
+        if request.user.is_driver:
+            raise PermissionDenied("Un compte chauffeur ne peut pas publier d'annonce.")
         serializer = CargoWriteSerializer(data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
         cargo = serializer.save(client=request.user)

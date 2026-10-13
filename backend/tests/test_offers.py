@@ -97,6 +97,12 @@ def test_accept_creates_one_shipment_and_closes_other_offers(client_user, driver
     assert "origin_address" not in auth(driver_a).get(f"/api/cargos/{published_cargo.pk}/").data
     assert auth(driver_a).get("/api/cargos/").data["count"] == 0
 
+    # Le tarif convenu (4 800) remplace le prix proposé pour le client et le chauffeur retenu seulement.
+    assert auth(client_user).get(f"/api/cargos/{published_cargo.pk}/").data["agreed_price"] == "4800.00"
+    assert auth(client_user).get("/api/cargos/mine/").data["results"][0]["agreed_price"] == "4800.00"
+    assert auth(driver_b).get(f"/api/cargos/{published_cargo.pk}/").data["agreed_price"] == "4800.00"
+    assert auth(driver_a).get(f"/api/cargos/{published_cargo.pk}/").data["agreed_price"] is None
+
 
 @pytest.mark.django_db
 def test_only_cargo_owner_can_accept(driver_a, driver_b, published_cargo):

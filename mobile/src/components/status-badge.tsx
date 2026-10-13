@@ -1,4 +1,4 @@
-import { fr } from '@/i18n/fr';
+import { cargoStatusLabel, offerStatusLabel, shipmentStatusLabel, verificationLabel } from '@/i18n/labels';
 import type { CargoStatus, OfferStatus, ShipmentStatus, VerificationStatus } from '@/types/api';
 
 import { Badge, type BadgeTone } from './ui';
@@ -6,7 +6,8 @@ import { Badge, type BadgeTone } from './ui';
 const CARGO_TONE: Record<CargoStatus, BadgeTone> = {
   draft: 'neutral',
   published: 'info',
-  assigned: 'success',
+  assigned: 'warning',
+  completed: 'success',
   cancelled: 'danger',
   expired: 'neutral',
 };
@@ -36,14 +37,14 @@ const VERIFICATION_TONE: Record<VerificationStatus, BadgeTone> = {
 };
 
 export const CargoStatusBadge = ({ status }: { status: CargoStatus }) => (
-  <Badge label={fr.cargoStatus[status]} tone={CARGO_TONE[status]} />
+  <Badge label={cargoStatusLabel(status)} tone={CARGO_TONE[status]} />
 );
 export const OfferStatusBadge = ({ status }: { status: OfferStatus }) => (
-  <Badge label={fr.offerStatus[status]} tone={OFFER_TONE[status]} />
+  <Badge label={offerStatusLabel(status)} tone={OFFER_TONE[status]} />
 );
 export const ShipmentStatusBadge = ({ status }: { status: ShipmentStatus }) => (
-  <Badge label={fr.shipmentStatus[status]} tone={SHIPMENT_TONE[status]} />
+  <Badge label={shipmentStatusLabel(status)} tone={SHIPMENT_TONE[status]} />
 );
 export const VerificationBadge = ({ status }: { status: VerificationStatus }) => (
-  <Badge label={fr.verification[status]} tone={VERIFICATION_TONE[status]} />
+  <Badge label={verificationLabel(status)} tone={VERIFICATION_TONE[status]} />
 );

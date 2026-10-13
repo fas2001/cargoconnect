@@ -63,7 +63,11 @@ def _apply(shipment: Shipment, to_status: str, *, actor, note: str) -> Shipment:
     ShipmentEvent.objects.create(
         shipment=shipment, from_status=from_status, to_status=to_status, actor=actor, note=note
     )
-    if to_status == S.CANCELLED:
+    if to_status == S.COMPLETED:
+        cargo = shipment.cargo
+        cargo.status = CargoStatus.COMPLETED
+        cargo.save(update_fields=["status", "updated_at"])
+    elif to_status == S.CANCELLED:
         cargo = shipment.cargo
         cargo.status = CargoStatus.CANCELLED
         cargo.cancelled_at = timezone.now()

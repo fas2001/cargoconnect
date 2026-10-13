@@ -53,6 +53,7 @@ class CargoListSerializer(serializers.ModelSerializer):
     offers_count = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
     is_mine = serializers.SerializerMethodField()
+    agreed_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Cargo
@@ -68,6 +69,7 @@ class CargoListSerializer(serializers.ModelSerializer):
             "destination_city",
             "loading_date",
             "proposed_price",
+            "agreed_price",
             "currency",
             "status",
             "status_label",
@@ -94,6 +96,16 @@ class CargoListSerializer(serializers.ModelSerializer):
     def get_is_mine(self, cargo):
         request = self.context.get("request")
         return bool(request and cargo.client_id == request.user.pk)
+
+    def get_agreed_price(self, cargo) -> str | None:
+        """Tarif de l'offre acceptée : visible seulement par le client et le chauffeur retenu."""
+        shipment = getattr(cargo, "shipment", None)
+        request = self.context.get("request")
+        if shipment is None or request is None:
+            return None
+        if request.user.pk not in (cargo.client_id, shipment.driver.user_id):
+            return None
+        return str(shipment.agreed_price)
 
 
 class CargoDetailSerializer(CargoListSerializer):

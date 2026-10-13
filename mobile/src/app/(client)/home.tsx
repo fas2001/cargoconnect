@@ -8,6 +8,7 @@ import { Button, EmptyState, ErrorState, Loading, Screen, SectionTitle, textStyl
 import { useCurrentUser } from '@/features/auth/auth-context';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
+import { t } from '@/i18n';
 
 export default function ClientHome() {
   const user = useCurrentUser();
@@ -29,17 +30,17 @@ export default function ClientHome() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
-      <Text style={textStyles.title}>Bonjour {user.full_name.split(' ')[0]} 👋</Text>
-      <Button title="Publier une cargaison" icon="add-circle-outline" onPress={() => router.push('/publish')} />
+      <Text style={textStyles.title}>{t('Bonjour {name} 👋', { name: user.full_name.split(' ')[0] })}</Text>
+      <Button title={t('Publier une cargaison')} icon="add-circle-outline" onPress={() => router.push('/publish')} />
 
-      <SectionTitle>Transports en cours</SectionTitle>
+      <SectionTitle>{t('Transports en cours')}</SectionTitle>
       {activeShipments.length ? (
         activeShipments.map((s) => <ShipmentCard key={s.id} shipment={s} />)
       ) : (
-        <Text style={textStyles.secondary}>Aucun transport en cours.</Text>
+        <Text style={textStyles.secondary}>{t('Aucun transport en cours.')}</Text>
       )}
 
-      <SectionTitle>Annonces ouvertes</SectionTitle>
+      <SectionTitle>{t('Annonces ouvertes')}</SectionTitle>
       {openCargos.length ? (
         openCargos.map((c) => (
           <CargoCard key={c.id} cargo={c} showStatus onPress={() => router.push({ pathname: '/cargo/[id]', params: { id: c.id } })} />
@@ -47,8 +48,8 @@ export default function ClientHome() {
       ) : (
         <EmptyState
           icon="cube-outline"
-          title="Aucune annonce ouverte"
-          message="Publiez votre première cargaison pour recevoir des propositions de transporteurs."
+          title={t('Aucune annonce ouverte')}
+          message={t('Publiez votre première cargaison pour recevoir des propositions de transporteurs.')}
         />
       )}
     </Screen>

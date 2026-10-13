@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps, ReactNode } from 'react';
 import {
   ActivityIndicator,
+  I18nManager,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,6 +19,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
+
+import { TruckLoader } from './truck-loader';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -154,6 +158,12 @@ export function SelectButton({
   );
 }
 
+/** Flèche « suivant » ou « précédent » qui suit le sens de lecture (inversée en arabe). */
+export function Chevron({ direction = 'forward', size, color }: { direction?: 'forward' | 'back'; size: number; color: string }) {
+  const pointsForward = (direction === 'forward') !== I18nManager.isRTL;
+  return <Ionicons name={pointsForward ? 'chevron-forward' : 'chevron-back'} size={size} color={color} />;
+}
+
 export function Card({ children, onPress, style }: { children: ReactNode; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
   if (!onPress) return <View style={[styles.card, style]}>{children}</View>;
   return (
@@ -215,7 +225,7 @@ export function InfoRow({ icon, label, value }: { icon: IconName; label: string;
 export function Loading() {
   return (
     <View style={styles.centered}>
-      <ActivityIndicator size="large" color={Colors.primary} />
+      <TruckLoader />
     </View>
   );
 }
@@ -235,9 +245,9 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   return (
     <EmptyState
       icon="cloud-offline-outline"
-      title="Impossible de charger"
+      title={t('Impossible de charger')}
       message={message}
-      action={onRetry ? <Button title="Réessayer" variant="secondary" onPress={onRetry} /> : undefined}
+      action={onRetry ? <Button title={t('Réessayer')} variant="secondary" onPress={onRetry} /> : undefined}
     />
   );
 }

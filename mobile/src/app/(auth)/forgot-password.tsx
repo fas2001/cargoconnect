@@ -5,6 +5,7 @@ import { Text } from 'react-native';
 import { Banner, Button, Screen, TextField, textStyles } from '@/components/ui';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
+import { t } from '@/i18n';
 
 export default function ForgotPassword() {
   const [step, setStep] = useState<'phone' | 'code' | 'done'>('phone');
@@ -44,23 +45,23 @@ export default function ForgotPassword() {
 
       {step === 'phone' ? (
         <>
-          <Text style={textStyles.secondary}>Nous allons vous envoyer un code sur WhatsApp, au numéro de votre compte.</Text>
+          <Text style={textStyles.secondary}>{t('Nous allons vous envoyer un code sur WhatsApp, au numéro de votre compte.')}</Text>
           <TextField
-            label="Numéro de téléphone"
+            label={t('Numéro de téléphone')}
             placeholder="06 12 34 56 78"
             keyboardType="phone-pad"
             value={phone}
             onChangeText={setPhone}
           />
-          <Button title="Recevoir le code sur WhatsApp" icon="logo-whatsapp" onPress={sendCode} loading={loading} disabled={!phone} />
+          <Button title={t('Recevoir le code sur WhatsApp')} icon="logo-whatsapp" onPress={sendCode} loading={loading} disabled={!phone} />
         </>
       ) : null}
 
       {step === 'code' ? (
         <>
-          <Banner message={`Si ce numéro est associé à un compte, un code vient d'être envoyé sur WhatsApp au ${phone}.`} />
+          <Banner message={t("Si ce numéro est associé à un compte, un code vient d'être envoyé sur WhatsApp au {phone}.", { phone })} />
           <TextField
-            label="Code reçu sur WhatsApp"
+            label={t('Code reçu sur WhatsApp')}
             keyboardType="number-pad"
             autoComplete="sms-otp"
             textContentType="oneTimeCode"
@@ -69,21 +70,21 @@ export default function ForgotPassword() {
             onChangeText={setCode}
           />
           <TextField
-            label="Nouveau mot de passe"
+            label={t('Nouveau mot de passe')}
             secureTextEntry
             autoComplete="new-password"
             value={password}
             onChangeText={setPassword}
           />
-          <Button title="Changer le mot de passe" onPress={reset} loading={loading} disabled={code.length < 4 || !password} />
-          <Button title="Renvoyer le code" variant="ghost" onPress={sendCode} disabled={loading} />
+          <Button title={t('Changer le mot de passe')} onPress={reset} loading={loading} disabled={code.length < 4 || !password} />
+          <Button title={t('Renvoyer le code')} variant="ghost" onPress={sendCode} disabled={loading} />
         </>
       ) : null}
 
       {step === 'done' ? (
         <>
-          <Banner tone="success" icon="checkmark-circle-outline" message="Mot de passe modifié. Vous pouvez vous connecter." />
-          <Button title="Se connecter" onPress={() => router.replace('/login')} />
+          <Banner tone="success" icon="checkmark-circle-outline" message={t('Mot de passe modifié. Vous pouvez vous connecter.')} />
+          <Button title={t('Se connecter')} onPress={() => router.replace('/login')} />
         </>
       ) : null}
     </Screen>
