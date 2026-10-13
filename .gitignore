@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+.pytest_cache/
+.env
+
+# Node / Expo (voir aussi mobile/.gitignore)
+node_modules/

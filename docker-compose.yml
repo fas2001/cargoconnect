@@ -1,0 +1,15 @@
+# PostgreSQL pour le développement local : docker compose up -d db
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: cargoconnect
+      POSTGRES_USER: cargoconnect
+      POSTGRES_PASSWORD: cargoconnect
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
