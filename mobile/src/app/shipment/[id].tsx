@@ -1,12 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Route } from '@/components/cargo-card';
 import { OptionPicker } from '@/components/option-picker';
+import { ProofSheet } from '@/components/proof-sheet';
 import { ReasonDialog } from '@/components/reason-dialog';
+import { SignatureView } from '@/components/signature-pad';
 import { ShipmentStatusBadge } from '@/components/status-badge';
 import { Banner, Button, Card, ErrorState, InfoRow, Loading, Screen, SectionTitle, TextField, textStyles } from '@/components/ui';
 import { Colors, FontSize, Spacing } from '@/constants/theme';
@@ -14,11 +17,13 @@ import { localName, t, tr } from '@/i18n';
 import { reportReasons, shipmentActionLabel, shipmentStatusLabel } from '@/i18n/labels';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
-import type { Contact, Shipment, ShipmentStatus } from '@/types/api';
+import type { Contact, Shipment, ShipmentEvent, ShipmentProof, ShipmentStatus } from '@/types/api';
 import { confirmAction } from '@/utils/confirm';
 import { formatDateTime, formatDay, formatPrice, formatWeight } from '@/utils/format';
 
 const PROGRESS: ShipmentStatus[] = ['confirmed', 'loaded', 'in_transit', 'delivered', 'completed'];
+// Étapes où le chauffeur fournit des preuves (photos, GPS, et signature à la livraison).
+const PROOF_STEPS: ShipmentStatus[] = ['loaded', 'delivered'];
 
 export default function ShipmentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,6 +32,7 @@ export default function ShipmentScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<ShipmentStatus | null>(null);
   const [reasonFor, setReasonFor] = useState<ShipmentStatus | null>(null);
+  const [proofFor, setProofFor] = useState<ShipmentStatus | null>(null);
 
   if (query.isLoading) return <Loading />;
   if (query.error || !query.data) return <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />;
@@ -55,8 +61,21 @@ export default function ShipmentScreen() {
       setReasonFor(status);
       return;
     }
+    if (PROOF_STEPS.includes(status)) {
+      setProofFor(status);
+      return;
+    }
     const ok = await confirmAction(shipmentActionLabel(status), t('Confirmez-vous cette étape ?'), t('Confirmer'));
     if (ok) await transition(status);
+  };
+
+  // Erreur affichée dans la fenêtre de preuve (relancée), qui reste ouverte pour corriger.
+  const submitProof = async (proof: ShipmentProof) => {
+    if (!proofFor) return;
+    const updated = await api.changeShipmentStatus(shipment.id, proofFor, '', proof);
+    queryClient.setQueryData(['shipment', id], updated);
+    await queryClient.invalidateQueries({ queryKey: ['shipments'] });
+    setProofFor(null);
   };
 
   const mainActions = shipment.allowed_transitions.filter((a) => !a.note_required);
@@ -104,6 +123,16 @@ export default function ShipmentScreen() {
         <InfoRow icon="location-outline" label={t('Adresse départ')} value={cargo.origin_address || localName(cargo.origin_city)} />
         <InfoRow icon="flag-outline" label={t('Adresse arrivée')} value={cargo.destination_address || localName(cargo.destination_city)} />
         <InfoRow icon="barbell-outline" label={t('Poids')} value={formatWeight(cargo.weight_kg)} />
+        {cargo.declared_value ? (
+          <InfoRow icon="shield-checkmark-outline" label={t('Valeur déclarée')} value={formatPrice(cargo.declared_value, cargo.currency)} />
+        ) : null}
+        {cargo.recipient_name ? (
+          <InfoRow
+            icon="person-outline"
+            label={t('Destinataire')}
+            value={cargo.recipient_phone ? `${cargo.recipient_name} · ${cargo.recipient_phone}` : cargo.recipient_name}
+          />
+        ) : null}
         {shipment.vehicle ? (
           <InfoRow icon="bus-outline" label={t('Véhicule')} value={`${tr(shipment.vehicle.truck_type_label)} — ${shipment.vehicle.registration_number}`} />
         ) : null}
@@ -121,6 +150,7 @@ export default function ShipmentScreen() {
                 {formatDateTime(e.created_at)} · {e.actor_name}
               </Text>
               {e.note ? <Text style={textStyles.secondary}>{e.note}</Text> : null}
+              <EventProof event={e} />
             </View>
           </View>
         ))}
@@ -142,7 +172,47 @@ export default function ShipmentScreen() {
         onCancel={() => setReasonFor(null)}
         onConfirm={(reason) => (reasonFor ? transition(reasonFor, reason) : undefined)}
       />
+
+      <ProofSheet
+        visible={proofFor !== null}
+        title={proofFor ? shipmentActionLabel(proofFor) : ''}
+        withSignature={proofFor === 'delivered'}
+        defaultReceiver={cargo.recipient_name ?? ''}
+        onCancel={() => setProofFor(null)}
+        onSubmit={submitProof}
+      />
     </Screen>
+  );
+}
+
+/** Preuves d'une étape : photos, lien vers la position, réceptionnaire et signature. */
+function EventProof({ event }: { event: ShipmentEvent }) {
+  if (!event.photos.length && !event.latitude && !event.signature) return null;
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`;
+  return (
+    <View style={styles.proof}>
+      {event.photos.length ? (
+        <View style={styles.proofPhotos}>
+          {event.photos.map((photo) => (
+            <Pressable key={photo.id} onPress={() => Linking.openURL(photo.image)} accessibilityRole="imagebutton" accessibilityLabel={t('Voir la photo')}>
+              <Image source={photo.image} style={styles.proofPhoto} contentFit="cover" />
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      {event.latitude && event.longitude ? (
+        <Pressable onPress={() => Linking.openURL(mapUrl)} accessibilityRole="link" style={styles.mapLink}>
+          <Ionicons name="location-outline" size={16} color={Colors.primary} />
+          <Text style={styles.mapText}>
+            {event.location_accuracy_m !== null
+              ? t('Voir la position (±{meters} m)', { meters: Math.round(event.location_accuracy_m) })
+              : t('Voir la position')}
+          </Text>
+        </Pressable>
+      ) : null}
+      {event.receiver_name ? <Text style={textStyles.secondary}>{t('Réceptionné par {name}', { name: event.receiver_name })}</Text> : null}
+      {event.signature ? <SignatureView path={event.signature} /> : null}
+    </View>
   );
 }
 
@@ -262,4 +332,9 @@ const styles = StyleSheet.create({
   dotActive: { backgroundColor: Colors.primary },
   eventTitle: { fontSize: FontSize.small, fontWeight: '600', color: Colors.text },
   stars: { flexDirection: 'row', gap: Spacing.sm },
+  proof: { gap: Spacing.xs, marginTop: Spacing.xs },
+  proofPhotos: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
+  proofPhoto: { width: 64, height: 64, borderRadius: 8, backgroundColor: Colors.border },
+  mapLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  mapText: { fontSize: FontSize.small, color: Colors.primary, fontWeight: '600' },
 });

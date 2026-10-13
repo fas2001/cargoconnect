@@ -29,6 +29,10 @@ export type CargoFormValues = {
   loading_date: string | null;
   proposed_price: string;
   instructions: string;
+  declared_value: string;
+  recipient_name: string;
+  recipient_phone: string;
+  accept_declaration: boolean;
 };
 
 export const EMPTY_CARGO: CargoFormValues = {
@@ -45,6 +49,10 @@ export const EMPTY_CARGO: CargoFormValues = {
   loading_date: null,
   proposed_price: '',
   instructions: '',
+  declared_value: '',
+  recipient_name: '',
+  recipient_phone: '',
+  accept_declaration: false,
 };
 
 const decimal = (v: string) => v.replace(',', '.').replace(/[^\d.]/g, '');
@@ -58,6 +66,8 @@ function validate(v: CargoFormValues): Record<string, string> {
   if (!v.origin_city) errors.origin_city = t('Choisissez la ville de départ.');
   if (!v.destination_city) errors.destination_city = t("Choisissez la ville d'arrivée.");
   if (!v.loading_date) errors.loading_date = t('Choisissez une date.');
+  if (!v.declared_value || Number(v.declared_value) <= 0) errors.declared_value = t('Indiquez la valeur de la marchandise.');
+  if (!v.accept_declaration) errors.accept_goods_declaration = t('Cochez la déclaration pour publier.');
   return errors;
 }
 
@@ -76,6 +86,10 @@ function toInput(v: CargoFormValues, publish: boolean): CargoInput {
     loading_date: v.loading_date!,
     proposed_price: v.proposed_price || null,
     instructions: v.instructions.trim(),
+    declared_value: v.declared_value,
+    recipient_name: v.recipient_name.trim(),
+    recipient_phone: v.recipient_phone.trim(),
+    accept_goods_declaration: v.accept_declaration,
     publish,
   };
 }
@@ -185,6 +199,26 @@ export function CargoForm({ initial = EMPTY_CARGO, submitLabel, allowDraft, with
         error={errors.proposed_price}
       />
       <TextField label={t('Instructions')} placeholder={t("Horaires d'accès, manutention...")} multiline value={values.instructions} onChangeText={set('instructions')} error={errors.instructions} />
+      <TextField
+        label={t('Valeur de la marchandise (DH)')}
+        keyboardType="number-pad"
+        value={values.declared_value}
+        onChangeText={(text) => set('declared_value')(decimal(text))}
+        hint={t('Visible uniquement par le transporteur retenu. Sert de référence en cas de litige ou de vol.')}
+        error={errors.declared_value}
+      />
+
+      <SectionTitle>{t('Destinataire (facultatif)')}</SectionTitle>
+      <TextField label={t('Nom du destinataire')} value={values.recipient_name} onChangeText={set('recipient_name')} error={errors.recipient_name} />
+      <TextField
+        label={t('Téléphone du destinataire')}
+        keyboardType="phone-pad"
+        placeholder="06 12 34 56 78"
+        value={values.recipient_phone}
+        onChangeText={set('recipient_phone')}
+        hint={t("Si la marchandise est réceptionnée par quelqu'un d'autre que vous. Visible uniquement par le transporteur retenu.")}
+        error={errors.recipient_phone}
+      />
 
       {withPhotos ? (
         <>
@@ -206,6 +240,22 @@ export function CargoForm({ initial = EMPTY_CARGO, submitLabel, allowDraft, with
           </View>
         </>
       ) : null}
+
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: values.accept_declaration }}
+        onPress={() => set('accept_declaration')(!values.accept_declaration)}
+        style={styles.declaration}>
+        <Ionicons
+          name={values.accept_declaration ? 'checkbox' : 'square-outline'}
+          size={24}
+          color={errors.accept_goods_declaration ? Colors.danger : Colors.primary}
+        />
+        <Text style={styles.declarationText}>
+          {t('Je certifie que la marchandise est licite et conforme à la description, et que sa valeur déclarée est exacte.')}
+        </Text>
+      </Pressable>
+      {errors.accept_goods_declaration ? <Text style={styles.error}>{errors.accept_goods_declaration}</Text> : null}
 
       <Text style={styles.notice}>
         {t("Ne mettez pas votre numéro de téléphone dans l'annonce : il sera partagé automatiquement avec le transporteur retenu.")}
@@ -241,4 +291,7 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   notice: { fontSize: 12, color: Colors.textSecondary },
+  declaration: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' },
+  declarationText: { flex: 1, fontSize: 14, color: Colors.text },
+  error: { fontSize: 12, color: Colors.danger },
 });

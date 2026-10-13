@@ -1,7 +1,9 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.common.validators import normalize_phone
 from apps.offers.models import OfferStatus
 
 from . import services
@@ -120,7 +122,8 @@ class CargoDetailSerializer(CargoListSerializer):
     my_offer = serializers.SerializerMethodField()
     shipment_id = serializers.SerializerMethodField()
 
-    PRIVATE_FIELDS = ("origin_address", "destination_address")
+    # Visibles seulement par l'auteur de l'annonce et le chauffeur retenu.
+    PRIVATE_FIELDS = ("origin_address", "destination_address", "declared_value", "recipient_name", "recipient_phone")
 
     class Meta(CargoListSerializer.Meta):
         fields = CargoListSerializer.Meta.fields + [
@@ -128,6 +131,10 @@ class CargoDetailSerializer(CargoListSerializer):
             "instructions",
             "origin_address",
             "destination_address",
+            "declared_value",
+            "recipient_name",
+            "recipient_phone",
+            "goods_declaration_at",
             "photos",
             "client",
             "cancel_reason",
@@ -174,6 +181,7 @@ class CargoWriteSerializer(serializers.ModelSerializer):
     origin_city = serializers.PrimaryKeyRelatedField(queryset=City.objects.filter(is_active=True))
     destination_city = serializers.PrimaryKeyRelatedField(queryset=City.objects.filter(is_active=True))
     publish = serializers.BooleanField(write_only=True, required=False, default=False)
+    accept_goods_declaration = serializers.BooleanField(write_only=True)
 
     class Meta:
         model = Cargo
@@ -191,8 +199,36 @@ class CargoWriteSerializer(serializers.ModelSerializer):
             "loading_date",
             "proposed_price",
             "instructions",
+            "declared_value",
+            "recipient_name",
+            "recipient_phone",
+            "accept_goods_declaration",
             "publish",
         ]
+        extra_kwargs = {"declared_value": {"required": True, "allow_null": False}}
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # La valeur et la déclaration ne sont exigées qu'à la création de l'annonce.
+        if self.instance is not None:
+            fields["declared_value"].required = False
+            fields["accept_goods_declaration"].required = False
+        return fields
+
+    def validate_recipient_phone(self, value):
+        if not value:
+            return ""
+        try:
+            return normalize_phone(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.messages[0]) from exc
+
+    def validate_accept_goods_declaration(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                "Vous devez certifier que la marchandise est licite et conforme à la description."
+            )
+        return value
 
     def validate_loading_date(self, value):
         if value < timezone.localdate():
@@ -201,11 +237,15 @@ class CargoWriteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("publish", None)
+        validated_data.pop("accept_goods_declaration")
+        validated_data["goods_declaration_at"] = timezone.now()
         validated_data["currency"] = settings.CARGOCONNECT["CURRENCY"]
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         validated_data.pop("publish", None)
+        if validated_data.pop("accept_goods_declaration", False):
+            validated_data["goods_declaration_at"] = timezone.now()
         cargo = super().update(instance, validated_data)
         if "loading_date" in validated_data:
             services.refresh_expiry(cargo)

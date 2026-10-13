@@ -1,6 +1,6 @@
 from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import status, viewsets
+from rest_framework import parsers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -42,7 +42,7 @@ class ShipmentViewSet(viewsets.ReadOnlyModelViewSet):
             elif scope == "past":
                 qs = qs.exclude(status__in=ACTIVE)
             return qs.prefetch_related("cargo__photos").order_by("-confirmed_at")
-        return qs.prefetch_related("events__actor", "cargo__photos")
+        return qs.prefetch_related("events__actor", "events__photos", "cargo__photos")
 
     def get_serializer_class(self):
         return ShipmentListSerializer if self.action == "list" else ShipmentSerializer
@@ -56,8 +56,8 @@ class ShipmentViewSet(viewsets.ReadOnlyModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
-    @extend_schema(request=ShipmentEventCreateSerializer, responses={201: ShipmentSerializer})
-    @action(detail=True, methods=["post"])
+    @extend_schema(request={"multipart/form-data": ShipmentEventCreateSerializer}, responses={201: ShipmentSerializer})
+    @action(detail=True, methods=["post"], parser_classes=[parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser])
     def events(self, request, pk=None):
         shipment = self.get_object()
         serializer = ShipmentEventCreateSerializer(data=request.data)
@@ -67,6 +67,7 @@ class ShipmentViewSet(viewsets.ReadOnlyModelViewSet):
             user=request.user,
             to_status=serializer.validated_data["status"],
             note=serializer.validated_data["note"],
+            proof=serializer.proof(),
         )
         shipment = self.get_queryset().get(pk=shipment.pk)
         return Response(ShipmentSerializer(shipment, context=self.get_serializer_context()).data, status=status.HTTP_201_CREATED)

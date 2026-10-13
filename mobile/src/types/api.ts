@@ -1,4 +1,5 @@
 // Types alignés sur l'API Django (voir docs/openapi.yaml).
+import type { ImagePickerAsset } from 'expo-image-picker';
 
 export type Role = 'client' | 'driver';
 
@@ -181,6 +182,11 @@ export type CargoDetail = CargoSummary & {
   can_edit: boolean;
   my_offer: OwnOffer | null;
   shipment_id: string | null;
+  // Privés : présents seulement pour le client et le chauffeur retenu.
+  declared_value?: string | null;
+  recipient_name?: string;
+  recipient_phone?: string;
+  goods_declaration_at: string | null;
 };
 
 export type ClientOffer = {
@@ -210,6 +216,10 @@ export type CargoInput = {
   loading_date: string; // AAAA-MM-JJ
   proposed_price?: string | null;
   instructions?: string;
+  declared_value: string;
+  recipient_name?: string;
+  recipient_phone?: string;
+  accept_goods_declaration: boolean;
   publish?: boolean;
 };
 
@@ -222,7 +232,24 @@ export type ShipmentEvent = {
   to_status_label: string;
   actor_name: string;
   note: string;
+  // Preuves au chargement et à la livraison.
+  latitude: string | null;
+  longitude: string | null;
+  location_accuracy_m: number | null;
+  receiver_name: string;
+  signature: string;
+  photos: { id: string; image: string; created_at: string }[];
   created_at: string;
+};
+
+/** Preuves envoyées par le chauffeur au chargement et à la livraison. */
+export type ShipmentProof = {
+  photos: ImagePickerAsset[];
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  receiver_name?: string;
+  signature?: string;
 };
 
 export type ShipmentSummary = {

@@ -1,3 +1,6 @@
+import os
+import uuid
+
 from django.conf import settings
 from django.db import models
 
@@ -51,7 +54,36 @@ class ShipmentEvent(BaseModel):
     )
     note = models.CharField(max_length=500, blank=True)
 
+    # Preuves au chargement et à la livraison : position du téléphone du chauffeur...
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    location_accuracy_m = models.FloatField("précision GPS (m)", null=True, blank=True)
+    # ... et, à la livraison, la personne qui réceptionne et sa signature (tracé SVG).
+    receiver_name = models.CharField("réceptionnaire", max_length=150, blank=True)
+    signature = models.TextField("signature (tracé SVG)", blank=True)
+
     class Meta(BaseModel.Meta):
         verbose_name = "événement de transport"
         verbose_name_plural = "historique des transports"
+        ordering = ["created_at"]
+
+    @property
+    def has_location(self) -> bool:
+        return self.latitude is not None and self.longitude is not None
+
+
+def _proof_photo_path(instance, filename):
+    ext = os.path.splitext(filename)[1].lower() or ".jpg"
+    return f"shipments/{instance.event.shipment_id}/{uuid.uuid4().hex}{ext}"
+
+
+class ShipmentPhoto(BaseModel):
+    """Photo prise par le chauffeur au chargement ou à la livraison."""
+
+    event = models.ForeignKey(ShipmentEvent, on_delete=models.CASCADE, related_name="photos")
+    image = models.ImageField(upload_to=_proof_photo_path)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "photo de preuve"
+        verbose_name_plural = "photos de preuve"
         ordering = ["created_at"]

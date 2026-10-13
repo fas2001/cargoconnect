@@ -15,6 +15,7 @@ import type {
   Paginated,
   RegisterData,
   Shipment,
+  ShipmentProof,
   ShipmentStatus,
   ShipmentSummary,
   TruckType,
@@ -23,6 +24,7 @@ import type {
 } from '@/types/api';
 
 import { apiRequest } from './api';
+import { appendAsset } from './upload';
 
 export type CargoFilters = {
   origin_city?: number;
@@ -95,8 +97,20 @@ export const api = {
   shipments: (role: 'client' | 'driver', scope?: 'active' | 'past', page = 1) =>
     apiRequest<Paginated<ShipmentSummary>>('/shipments/', { query: { role, scope, page } }),
   shipment: (id: string) => apiRequest<Shipment>(`/shipments/${id}/`),
-  changeShipmentStatus: (id: string, status: ShipmentStatus, note = '') =>
-    apiRequest<Shipment>(`/shipments/${id}/events/`, { method: 'POST', body: { status, note } }),
+  changeShipmentStatus: async (id: string, status: ShipmentStatus, note = '', proof?: ShipmentProof) => {
+    if (!proof) return apiRequest<Shipment>(`/shipments/${id}/events/`, { method: 'POST', body: { status, note } });
+    // Preuves : photos + position (+ réceptionnaire et signature à la livraison), en multipart.
+    const form = new FormData();
+    form.append('status', status);
+    form.append('note', note);
+    form.append('latitude', proof.latitude.toFixed(6));
+    form.append('longitude', proof.longitude.toFixed(6));
+    if (proof.accuracy !== null) form.append('location_accuracy_m', String(Math.round(proof.accuracy)));
+    if (proof.receiver_name) form.append('receiver_name', proof.receiver_name);
+    if (proof.signature) form.append('signature', proof.signature);
+    for (const photo of proof.photos) await appendAsset(form, 'photos', photo);
+    return apiRequest<Shipment>(`/shipments/${id}/events/`, { method: 'POST', body: form });
+  },
   reviewShipment: (id: string, rating: number, comment = '') =>
     apiRequest<unknown>(`/shipments/${id}/review/`, { method: 'POST', body: { rating, comment } }),
 

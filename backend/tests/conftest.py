@@ -1,8 +1,11 @@
+import io
 from datetime import timedelta
 
 import pytest
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
+from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
@@ -15,7 +18,10 @@ PASSWORD = "Camion-Maroc-2026"
 
 
 @pytest.fixture(autouse=True)
-def _fast_test_settings(settings):
+def _fast_test_settings(settings, tmp_path):
+    # Fichiers téléversés pendant les tests : dossier temporaire, jamais les vrais dossiers media.
+    settings.MEDIA_ROOT = tmp_path / "media"
+    settings.PRIVATE_MEDIA_ROOT = tmp_path / "private"
     cache.clear()  # remet à zéro les compteurs de limitation (ex. 5 codes par heure)
     settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
     settings.REST_FRAMEWORK = {**settings.REST_FRAMEWORK, "DEFAULT_THROTTLE_CLASSES": []}
@@ -83,6 +89,8 @@ def cargo_payload(cities, category):
         "destination_address": "Port Tanger Med, zone franche",
         "loading_date": str(timezone.localdate() + timedelta(days=3)),
         "proposed_price": "6500",
+        "declared_value": "120000",
+        "accept_goods_declaration": True,
     }
 
 
@@ -104,6 +112,23 @@ def published_cargo(client_user, cities, category):
     cargo = publish_cargo(cargo)
     assert cargo.status == CargoStatus.PUBLISHED
     return cargo
+
+
+def proof_photo(name="preuve.jpg"):
+    """Vraie image JPEG (ImageField vérifie le contenu)."""
+    buffer = io.BytesIO()
+    Image.new("RGB", (8, 8), "gray").save(buffer, "JPEG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/jpeg")
+
+
+# Preuves exigées au chargement et à la livraison (photos, GPS, réceptionnaire et signature).
+def proof_for(status):
+    if status not in ("loaded", "delivered"):
+        return {}
+    proof = {"photos": [proof_photo()], "latitude": "33.573110", "longitude": "-7.589843", "location_accuracy_m": "12"}
+    if status == "delivered":
+        proof |= {"receiver_name": "Youssef Réception", "signature": "M10 10 L40 40 L60 20"}
+    return proof
 
 
 def offer_on(cargo, driver_user, price="5000", message=""):

@@ -80,6 +80,18 @@ class Cargo(BaseModel):
     currency = models.CharField(max_length=3, default="MAD")
     instructions = models.TextField("instructions", blank=True, validators=[validate_no_contact_info])
 
+    # Preuves en cas de litige ou de vol. Privés : visibles seulement par le client et le chauffeur retenu
+    # (afficher la valeur de la marchandise à tous les chauffeurs exposerait les cargaisons de valeur).
+    declared_value = models.DecimalField(
+        "valeur déclarée de la marchandise", max_digits=12, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)]
+    )
+    recipient_name = models.CharField("destinataire (nom)", max_length=150, blank=True)
+    recipient_phone = models.CharField("destinataire (téléphone)", max_length=16, blank=True)
+    goods_declaration_at = models.DateTimeField(
+        "déclaration de conformité acceptée le", null=True, blank=True,
+        help_text="Le client certifie que la marchandise est licite et conforme à la description.",
+    )
+
     status = models.CharField(max_length=10, choices=CargoStatus.choices, default=CargoStatus.DRAFT, db_index=True)
     published_at = models.DateTimeField(null=True, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)

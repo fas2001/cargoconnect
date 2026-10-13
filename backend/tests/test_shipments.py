@@ -7,7 +7,7 @@ from django.utils import timezone
 from apps.cargos.models import CargoStatus
 from apps.shipments.models import Shipment, ShipmentStatus
 
-from .conftest import auth, make_user, offer_on
+from .conftest import auth, make_user, offer_on, proof_for
 
 
 @pytest.fixture
@@ -18,8 +18,9 @@ def shipment(client_user, driver_a, published_cargo):
     return Shipment.objects.get(pk=response.data["id"])
 
 
-def move(user, shipment, status, note=""):
-    return auth(user).post(f"/api/shipments/{shipment.pk}/events/", {"status": status, "note": note})
+def move(user, shipment, status, note="", proof=True):
+    data = {"status": status, "note": note, **(proof_for(status) if proof else {})}
+    return auth(user).post(f"/api/shipments/{shipment.pk}/events/", data, format="multipart")
 
 
 @pytest.mark.django_db
@@ -95,3 +96,38 @@ def test_periodic_tasks_autocomplete_and_expire(client_user, driver_a, shipment,
     assert shipment.events.last().actor is None
     assert shipment.cargo.status == CargoStatus.COMPLETED
     assert Cargo.objects.get(pk=stale["id"]).status == CargoStatus.EXPIRED
+
+
+@pytest.mark.django_db
+def test_loading_and_delivery_require_photos_gps_and_signature(client_user, driver_a, shipment):
+    assert move(driver_a, shipment, "loaded", proof=False).data["code"] == "photo_required"
+    no_gps = {k: v for k, v in proof_for("loaded").items() if k not in ("latitude", "longitude")}
+    response = auth(driver_a).post(
+        f"/api/shipments/{shipment.pk}/events/", {"status": "loaded", **no_gps}, format="multipart"
+    )
+    assert response.data["code"] == "location_required"
+    assert move(driver_a, shipment, "loaded").status_code == 201
+    assert move(driver_a, shipment, "in_transit").status_code == 201
+
+    unsigned = {k: v for k, v in proof_for("delivered").items() if k != "signature"}
+    response = auth(driver_a).post(
+        f"/api/shipments/{shipment.pk}/events/", {"status": "delivered", **unsigned}, format="multipart"
+    )
+    assert response.data["code"] == "signature_required"
+    delivered = move(driver_a, shipment, "delivered")
+    assert delivered.status_code == 201
+
+    # Les deux parties voient les preuves dans l'historique.
+    events = {e["to_status"]: e for e in auth(client_user).get(f"/api/shipments/{shipment.pk}/").data["events"]}
+    assert len(events["loaded"]["photos"]) == 1 and events["loaded"]["latitude"] == "33.573110"
+    assert events["delivered"]["receiver_name"] == "Youssef Réception"
+    assert events["delivered"]["signature"] == "M10 10 L40 40 L60 20"
+
+
+@pytest.mark.django_db
+def test_signature_cannot_contain_markup(driver_a, shipment):
+    move(driver_a, shipment, "loaded")
+    move(driver_a, shipment, "in_transit")
+    data = {**proof_for("delivered"), "status": "delivered", "signature": "<script>alert(1)</script>"}
+    response = auth(driver_a).post(f"/api/shipments/{shipment.pk}/events/", data, format="multipart")
+    assert response.status_code == 400 and "signature" in response.data

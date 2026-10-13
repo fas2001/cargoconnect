@@ -1,26 +1,78 @@
+import re
+
 from rest_framework import serializers
 
 from apps.drivers.serializers import VehicleSerializer
 
 from . import services
-from .models import Shipment, ShipmentEvent, ShipmentStatus
+from .models import Shipment, ShipmentEvent, ShipmentPhoto, ShipmentStatus
+
+MAX_PROOF_PHOTO_SIZE = 5 * 1024 * 1024
+
+
+class ShipmentPhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShipmentPhoto
+        fields = ["id", "image", "created_at"]
 
 
 class ShipmentEventSerializer(serializers.ModelSerializer):
     to_status_label = serializers.CharField(source="get_to_status_display", read_only=True)
     actor_name = serializers.SerializerMethodField()
+    photos = ShipmentPhotoSerializer(many=True, read_only=True)
 
     class Meta:
         model = ShipmentEvent
-        fields = ["id", "from_status", "to_status", "to_status_label", "actor_name", "note", "created_at"]
+        fields = [
+            "id",
+            "from_status",
+            "to_status",
+            "to_status_label",
+            "actor_name",
+            "note",
+            "latitude",
+            "longitude",
+            "location_accuracy_m",
+            "receiver_name",
+            "signature",
+            "photos",
+            "created_at",
+        ]
 
     def get_actor_name(self, event):
         return event.actor.public_name if event.actor else "Système"
 
 
+# Tracé de signature : commandes de chemin SVG uniquement (aucun script possible).
+SIGNATURE_PATTERN = re.compile(r"^[MLQCZmlqcz0-9.,\s-]*$")
+
+
 class ShipmentEventCreateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=ShipmentStatus.choices)
     note = serializers.CharField(required=False, allow_blank=True, max_length=500, default="")
+    # Preuves (chargement et livraison) : voir services.PROOF_REQUIRED.
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, min_value=-90, max_value=90, required=False)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, min_value=-180, max_value=180, required=False)
+    location_accuracy_m = serializers.FloatField(min_value=0, required=False, allow_null=True)
+    receiver_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    signature = serializers.CharField(required=False, allow_blank=True, max_length=50_000)
+    photos = serializers.ListField(child=serializers.ImageField(), required=False, max_length=services.MAX_PROOF_PHOTOS)
+
+    def validate_signature(self, value):
+        if not SIGNATURE_PATTERN.match(value):
+            raise serializers.ValidationError("Signature invalide.")
+        return value
+
+    def validate_photos(self, photos):
+        for photo in photos:
+            if photo.size > MAX_PROOF_PHOTO_SIZE:
+                raise serializers.ValidationError("Photo trop volumineuse (5 Mo maximum).")
+        return photos
+
+    def proof(self) -> dict:
+        data = self.validated_data
+        keys = ("latitude", "longitude", "location_accuracy_m", "receiver_name", "signature", "photos")
+        return {key: data[key] for key in keys if key in data}
 
 
 class ContactSerializer(serializers.Serializer):

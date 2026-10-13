@@ -1311,12 +1311,6 @@ paths:
       - shipments
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ShipmentEventCreateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ShipmentEventCreateRequest'
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/ShipmentEventCreateRequest'
@@ -1488,6 +1482,27 @@ components:
           type: string
           title: Adresse de livraison
           maxLength: 255
+        declared_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          title: Valeur déclarée de la marchandise
+        recipient_name:
+          type: string
+          title: Destinataire (nom)
+          maxLength: 150
+        recipient_phone:
+          type: string
+          title: Destinataire (téléphone)
+          maxLength: 16
+        goods_declaration_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: Déclaration de conformité acceptée le
+          description: Le client certifie que la marchandise est licite et conforme
+            à la description.
         photos:
           type: array
           items:
@@ -1728,12 +1743,30 @@ components:
           title: Prix proposé
         instructions:
           type: string
+        declared_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          title: Valeur déclarée de la marchandise
+        recipient_name:
+          type: string
+          title: Destinataire (nom)
+          maxLength: 150
+        recipient_phone:
+          type: string
+          title: Destinataire (téléphone)
+          maxLength: 16
+        accept_goods_declaration:
+          type: boolean
+          writeOnly: true
         publish:
           type: boolean
           writeOnly: true
           default: false
       required:
+      - accept_goods_declaration
       - category
+      - declared_value
       - destination_city
       - loading_date
       - origin_city
@@ -2535,6 +2568,22 @@ components:
           title: Prix proposé
         instructions:
           type: string
+        declared_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          title: Valeur déclarée de la marchandise
+        recipient_name:
+          type: string
+          title: Destinataire (nom)
+          maxLength: 150
+        recipient_phone:
+          type: string
+          title: Destinataire (téléphone)
+          maxLength: 16
+        accept_goods_declaration:
+          type: boolean
+          writeOnly: true
         publish:
           type: boolean
           writeOnly: true
@@ -2997,6 +3046,33 @@ components:
         note:
           type: string
           maxLength: 500
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        location_accuracy_m:
+          type: number
+          format: double
+          nullable: true
+          title: Précision GPS (m)
+        receiver_name:
+          type: string
+          title: Réceptionnaire
+          maxLength: 150
+        signature:
+          type: string
+          title: Signature (tracé SVG)
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShipmentPhoto'
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -3006,6 +3082,7 @@ components:
       - actor_name
       - created_at
       - id
+      - photos
       - to_status
       - to_status_label
     ShipmentEventCreateRequest:
@@ -3017,6 +3094,31 @@ components:
           type: string
           default: ''
           maxLength: 500
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        location_accuracy_m:
+          type: number
+          format: double
+          minimum: 0
+          nullable: true
+        receiver_name:
+          type: string
+          maxLength: 150
+        signature:
+          type: string
+          maxLength: 50000
+        photos:
+          type: array
+          items:
+            type: string
+            format: binary
+          maxItems: 5
       required:
       - status
     ShipmentList:
@@ -3056,6 +3158,25 @@ components:
       - id
       - my_role
       - status_label
+    ShipmentPhoto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        image:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - created_at
+      - id
+      - image
     ShipmentStatusEnum:
       enum:
       - confirmed

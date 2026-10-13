@@ -104,3 +104,27 @@ def test_reference_data_is_seeded():
     assert len(api.get("/api/reference/cities/").data) >= 30
     assert len(api.get("/api/reference/goods-categories/").data) >= 10
     assert {"value": "frigorifique", "label": "Frigorifique"} in api.get("/api/reference/truck-types/").data
+
+
+@pytest.mark.django_db
+def test_declared_value_and_declaration_are_required_and_private(client_user, driver_a, cargo_payload):
+    without = {k: v for k, v in cargo_payload.items() if k not in ("declared_value", "accept_goods_declaration")}
+    response = auth(client_user).post("/api/cargos/", without, format="json")
+    assert response.status_code == 400
+    assert {"declared_value", "accept_goods_declaration"} <= set(response.data)
+
+    refused = auth(client_user).post("/api/cargos/", {**cargo_payload, "accept_goods_declaration": False}, format="json")
+    assert refused.status_code == 400
+
+    created = auth(client_user).post(
+        "/api/cargos/",
+        {**cargo_payload, "publish": True, "recipient_name": "Dépôt Tanger", "recipient_phone": "0612345678"},
+        format="json",
+    )
+    assert created.status_code == 201, created.data
+    assert created.data["recipient_phone"] == "+212612345678"
+    assert created.data["goods_declaration_at"] is not None
+
+    # Un chauffeur qui consulte l'annonce ne voit ni la valeur ni le destinataire.
+    seen = auth(driver_a).get(f"/api/cargos/{created.data['id']}/").data
+    assert "declared_value" not in seen and "recipient_phone" not in seen
