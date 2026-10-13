@@ -1,4 +1,5 @@
 import type {
+  AccountType,
   AppNotification,
   AuthResponse,
   CargoDetail,
@@ -6,6 +7,7 @@ import type {
   CargoStatus,
   CargoSummary,
   City,
+  ClientIdentity,
   ClientOffer,
   DriverProfile,
   GoodsCategory,
@@ -59,6 +61,11 @@ export const api = {
   addVehicle: (body: { truck_type: TruckType; capacity_kg: string; registration_number: string; brand_model?: string }) =>
     apiRequest<Vehicle>('/me/vehicles/', { method: 'POST', body }),
   removeVehicle: (id: string) => apiRequest<void>(`/me/vehicles/${id}/`, { method: 'DELETE' }),
+  clientIdentity: () => apiRequest<ClientIdentity>('/me/client-identity/'),
+  saveClientIdentity: (body: { account_type: AccountType; cin_number?: string; company_name?: string; ice?: string }) =>
+    apiRequest<ClientIdentity>('/me/client-identity/', { method: 'PUT', body }),
+  uploadClientDocument: (form: FormData) =>
+    apiRequest<unknown>('/me/client-identity/documents/', { method: 'POST', body: form }),
   uploadDocument: (form: FormData) =>
     apiRequest<unknown>('/me/driver-profile/documents/', { method: 'POST', body: form }),
 

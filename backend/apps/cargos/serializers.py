@@ -39,6 +39,11 @@ class CargoClientSerializer(serializers.Serializer):
     name = serializers.CharField(source="public_name")
     rating = serializers.SerializerMethodField()
     member_since = serializers.DateTimeField(source="date_joined")
+    is_verified = serializers.SerializerMethodField()
+
+    def get_is_verified(self, user) -> bool:
+        identity = getattr(user, "client_identity", None)
+        return bool(identity and identity.is_verified)
 
     def get_rating(self, user):
         from apps.reviews.services import rating_summary

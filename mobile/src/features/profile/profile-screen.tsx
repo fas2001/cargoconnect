@@ -11,7 +11,7 @@ import { Colors, FontSize, Spacing } from '@/constants/theme';
 import { useAuth, useCurrentUser } from '@/features/auth/auth-context';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
-import type { Role } from '@/types/api';
+import type { IdentityStatus, Role } from '@/types/api';
 import { t } from '@/i18n';
 
 export function ProfileScreen({ role }: { role: Role }) {
@@ -63,6 +63,9 @@ export function ProfileScreen({ role }: { role: Role }) {
       ) : null}
 
       <Card>
+        {role === 'client' ? (
+          <MenuRow icon="id-card-outline" label={identityLabel(user.identity_status)} onPress={() => router.push('/identity')} />
+        ) : null}
         <MenuRow icon="notifications-outline" label={t('Notifications')} onPress={() => router.push('/notifications')} />
         <LanguageRow />
       </Card>
@@ -71,6 +74,19 @@ export function ProfileScreen({ role }: { role: Role }) {
       <Text style={[textStyles.caption, { textAlign: 'center' }]}>{t('CargoConnect — version MVP')}</Text>
     </Screen>
   );
+}
+
+function identityLabel(status: IdentityStatus | null): string {
+  switch (status) {
+    case 'verified':
+      return t('Mon identité · vérifiée');
+    case 'pending':
+      return t('Mon identité · en vérification');
+    case 'rejected':
+      return t('Mon identité · refusée');
+    default:
+      return t('Mon identité · à compléter');
+  }
 }
 
 function MenuRow({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {

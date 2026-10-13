@@ -73,6 +73,7 @@ function CargoSummaryCard({ cargo }: { cargo: CargoDetail }) {
         {!cargo.is_mine ? (
           <Text style={textStyles.caption}>
             {t('Publié par {name}', { name: cargo.client.name })}
+            {cargo.client.is_verified ? ` · ✓ ${t('Client vérifié')}` : ''}
             {cargo.client.rating.average ? ` · ★ ${cargo.client.rating.average} (${cargo.client.rating.count})` : ''}
           </Text>
         ) : null}

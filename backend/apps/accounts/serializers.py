@@ -1,13 +1,17 @@
+import re
+
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.common.validators import normalize_phone
 
-from .models import PhoneOTP, User
+from . import identity as identity_services
+from .models import CIN_PATTERN, ICE_PATTERN, ClientDocument, ClientIdentity, PhoneOTP, User
 
 
 class PhoneField(serializers.CharField):
@@ -34,6 +38,7 @@ class MeSerializer(serializers.ModelSerializer):
     roles = serializers.ListField(child=serializers.CharField(), read_only=True)
     driver_profile = serializers.SerializerMethodField()
     rating_as_client = serializers.SerializerMethodField()
+    identity_status = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -46,6 +51,7 @@ class MeSerializer(serializers.ModelSerializer):
             "roles",
             "driver_profile",
             "rating_as_client",
+            "identity_status",
             "date_joined",
         ]
         read_only_fields = ["id", "phone", "phone_verified", "date_joined"]
@@ -54,6 +60,9 @@ class MeSerializer(serializers.ModelSerializer):
         if not user.is_driver:
             return None
         return DriverSummarySerializer(user.driver_profile).data
+
+    def get_identity_status(self, user) -> str | None:
+        return None if user.is_driver else identity_services.status_of(user)
 
     def get_rating_as_client(self, user):
         from apps.reviews.services import rating_summary
@@ -152,3 +161,89 @@ class PasswordResetSerializer(serializers.Serializer):
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
+
+
+ALLOWED_IDENTITY_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".heic", ".webp"}
+MAX_IDENTITY_FILE_SIZE = 8 * 1024 * 1024
+
+
+class ClientDocumentSerializer(serializers.ModelSerializer):
+    """Document d'identité du client. Le fichier n'est jamais renvoyé : il reste privé."""
+
+    class Meta:
+        model = ClientDocument
+        fields = ["id", "doc_type", "side", "file", "status", "review_note", "created_at"]
+        read_only_fields = ["status", "review_note", "created_at"]
+        extra_kwargs = {"file": {"write_only": True}}
+
+    def validate_file(self, file):
+        if not any(file.name.lower().endswith(ext) for ext in ALLOWED_IDENTITY_EXTENSIONS):
+            raise serializers.ValidationError("Format accepté : PDF, JPG, PNG, HEIC ou WEBP.")
+        if file.size > MAX_IDENTITY_FILE_SIZE:
+            raise serializers.ValidationError("Fichier trop volumineux (8 Mo maximum).")
+        return file
+
+    def validate(self, attrs):
+        identity = self.context["identity"]
+        expected = dict.fromkeys(f"{t}:{s}" for t, s in identity_services.REQUIRED_DOCUMENTS[identity.account_type])
+        side = attrs.get("side", "unique")
+        if f"{attrs['doc_type']}:{side}" not in expected:
+            raise serializers.ValidationError({"doc_type": "Ce document ne correspond pas à votre type de compte."})
+        attrs["side"] = side
+        return attrs
+
+
+class ClientIdentitySerializer(serializers.ModelSerializer):
+    documents = serializers.SerializerMethodField()
+    checklist = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ClientIdentity
+        fields = [
+            "account_type",
+            "cin_number",
+            "company_name",
+            "ice",
+            "verification_status",
+            "rejection_reason",
+            "status",
+            "documents",
+            "checklist",
+        ]
+        read_only_fields = ["verification_status", "rejection_reason"]
+
+    @extend_schema_field(ClientDocumentSerializer(many=True))
+    def get_documents(self, identity):
+        return ClientDocumentSerializer(identity_services.current_documents(identity), many=True).data
+
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_checklist(self, identity):
+        return identity_services.checklist(identity)
+
+    def get_status(self, identity) -> str:
+        return identity_services.status_of(identity.user)
+
+    def validate_cin_number(self, value):
+        return value.replace(" ", "").upper()
+
+    def validate_ice(self, value):
+        return value.replace(" ", "")
+
+    def validate(self, attrs):
+        account_type = attrs.get("account_type") or getattr(self.instance, "account_type", None)
+        errors = {}
+        if account_type == ClientIdentity.AccountType.INDIVIDUAL:
+            if not re.match(CIN_PATTERN, attrs.get("cin_number", "")):
+                errors["cin_number"] = "Numéro de CIN invalide (ex. AB123456)."
+            attrs["company_name"] = ""
+            attrs["ice"] = ""
+        elif account_type == ClientIdentity.AccountType.COMPANY:
+            if not attrs.get("company_name", "").strip():
+                errors["company_name"] = "Indiquez la raison sociale."
+            if not re.match(ICE_PATTERN, attrs.get("ice", "")):
+                errors["ice"] = "L'ICE compte 15 chiffres."
+            attrs["cin_number"] = ""
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs

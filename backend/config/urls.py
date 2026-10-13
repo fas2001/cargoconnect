@@ -9,7 +9,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from apps.accounts import views as accounts
 from apps.cargos import views as cargos
 from apps.drivers import views as drivers
-from apps.drivers.admin_views import document_file
+from apps.drivers.admin_views import client_document_file, document_file
 from apps.notifications import views as notifications
 from apps.offers import views as offers
 from apps.reports import views as reports
@@ -41,6 +41,8 @@ api = [
     path("me/password/", accounts.ChangePasswordView.as_view(), name="change-password"),
     path("me/verify-phone/", accounts.VerifyPhoneView.as_view(), name="verify-phone"),
     path("me/driver-profile/", drivers.MyDriverProfileView.as_view(), name="my-driver-profile"),
+    path("me/client-identity/", accounts.MyClientIdentityView.as_view(), name="my-client-identity"),
+    path("me/client-identity/documents/", accounts.MyClientDocumentsView.as_view(), name="my-client-documents"),
     path("drivers/<uuid:pk>/", drivers.PublicDriverView.as_view(), name="driver-public"),
     # Cargaisons : offres imbriquées
     path("cargos/<uuid:pk>/offers/", cargos.CargoOffersView.as_view(), name="cargo-offers"),
@@ -54,6 +56,7 @@ api = [
 urlpatterns = [
     # Justificatifs chauffeurs : vue protégée et journalisée (avant les URLs de l'admin).
     path("admin/justificatifs/<uuid:pk>/fichier/", document_file, name="admin-document-file"),
+    path("admin/justificatifs-clients/<uuid:pk>/fichier/", client_document_file, name="admin-client-document-file"),
     path("admin/", admin.site.urls),
     path("api/", include(api)),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

@@ -9,6 +9,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.identity import publication_problem as identity_publication_problem
 from apps.common.exceptions import BusinessRuleError
 from apps.common.permissions import IsDriver
 from apps.offers import services as offer_services
@@ -100,6 +101,8 @@ class CargoViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Up
             raise PermissionDenied("Un compte chauffeur ne peut pas publier d'annonce.")
         serializer = CargoWriteSerializer(data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
+        if serializer.validated_data.get("publish"):
+            _ensure_identity(request.user)
         cargo = serializer.save(client=request.user)
         if serializer.validated_data.get("publish"):
             cargo = services.publish_cargo(cargo)
@@ -124,7 +127,9 @@ class CargoViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Up
     @extend_schema(request=None, responses={200: CargoDetailSerializer})
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
-        return self._detail(services.publish_cargo(self.get_object()))
+        cargo = self.get_object()
+        _ensure_identity(request.user)
+        return self._detail(services.publish_cargo(cargo))
 
     @extend_schema(
         request={"application/json": {"type": "object", "properties": {"reason": {"type": "string"}}}},
@@ -156,6 +161,13 @@ class CargoViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Up
         if not deleted:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _ensure_identity(user) -> None:
+    """Identité (CIN ou ICE + documents) exigée avant de publier ; les brouillons restent possibles."""
+    problem = identity_publication_problem(user)
+    if problem:
+        raise BusinessRuleError(problem, code="identity_required")
 
 
 class CargoOffersView(APIView):

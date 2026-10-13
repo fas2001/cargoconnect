@@ -583,6 +583,69 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/me/client-identity/:
+    get:
+      operationId: me_client_identity_retrieve
+      description: 'GET : identité de l''expéditeur (404 si non renseignée). PUT :
+        la crée ou la met à jour.'
+      tags:
+      - me
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientIdentity'
+          description: ''
+    put:
+      operationId: me_client_identity_update
+      description: 'GET : identité de l''expéditeur (404 si non renseignée). PUT :
+        la crée ou la met à jour.'
+      tags:
+      - me
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientIdentityRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClientIdentityRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClientIdentityRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientIdentity'
+          description: ''
+  /api/me/client-identity/documents/:
+    post:
+      operationId: me_client_identity_documents_create
+      tags:
+      - me
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClientDocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDocument'
+          description: ''
   /api/me/driver-profile/:
     get:
       operationId: me_driver_profile_retrieve
@@ -1362,6 +1425,14 @@ paths:
           description: ''
 components:
   schemas:
+    AccountTypeEnum:
+      enum:
+      - individual
+      - company
+      type: string
+      description: |-
+        * `individual` - Particulier
+        * `company` - Entreprise
     BlankEnum:
       enum:
       - ''
@@ -1376,7 +1447,11 @@ components:
         member_since:
           type: string
           format: date-time
+        is_verified:
+          type: boolean
+          readOnly: true
       required:
+      - is_verified
       - member_since
       - name
       - rating
@@ -1813,26 +1888,139 @@ components:
       - id
       - name_fr
       - slug
-    DocTypeEnum:
+    ClientDocument:
+      type: object
+      description: 'Document d''identité du client. Le fichier n''est jamais renvoyé
+        : il reste privé.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        doc_type:
+          allOf:
+          - $ref: '#/components/schemas/ClientDocumentDocTypeEnum'
+          title: Type
+        side:
+          allOf:
+          - $ref: '#/components/schemas/SideEnum'
+          title: Face
+        status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        review_note:
+          type: string
+          readOnly: true
+          title: Note de vérification
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - created_at
+      - doc_type
+      - id
+      - review_note
+      - status
+    ClientDocumentDocTypeEnum:
       enum:
       - cin
-      - selfie
-      - permis
-      - carte_grise
-      - assurance
-      - visite_technique
-      - agrement
-      - autre
+      - registre_commerce
       type: string
       description: |-
         * `cin` - Carte d'identité nationale
-        * `selfie` - Photo du visage (selfie)
-        * `permis` - Permis de conduire
-        * `carte_grise` - Carte grise
-        * `assurance` - Attestation d'assurance
-        * `visite_technique` - Visite technique
-        * `agrement` - Agrément / inscription transporteur
-        * `autre` - Autre
+        * `registre_commerce` - Registre de commerce / attestation ICE
+    ClientDocumentRequest:
+      type: object
+      description: 'Document d''identité du client. Le fichier n''est jamais renvoyé
+        : il reste privé.'
+      properties:
+        doc_type:
+          allOf:
+          - $ref: '#/components/schemas/ClientDocumentDocTypeEnum'
+          title: Type
+        side:
+          allOf:
+          - $ref: '#/components/schemas/SideEnum'
+          title: Face
+        file:
+          type: string
+          format: binary
+          writeOnly: true
+          title: Fichier
+      required:
+      - doc_type
+      - file
+    ClientIdentity:
+      type: object
+      properties:
+        account_type:
+          allOf:
+          - $ref: '#/components/schemas/AccountTypeEnum'
+          title: Type de compte
+        cin_number:
+          type: string
+          title: Numéro de CIN
+          maxLength: 10
+        company_name:
+          type: string
+          title: Raison sociale
+          maxLength: 150
+        ice:
+          type: string
+          maxLength: 15
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+          title: Statut de vérification
+        rejection_reason:
+          type: string
+          readOnly: true
+          title: Motif du refus
+        status:
+          type: string
+          readOnly: true
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientDocument'
+          readOnly: true
+        checklist:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - account_type
+      - checklist
+      - documents
+      - rejection_reason
+      - status
+      - verification_status
+    ClientIdentityRequest:
+      type: object
+      properties:
+        account_type:
+          allOf:
+          - $ref: '#/components/schemas/AccountTypeEnum'
+          title: Type de compte
+        cin_number:
+          type: string
+          title: Numéro de CIN
+          maxLength: 10
+        company_name:
+          type: string
+          title: Raison sociale
+          maxLength: 150
+        ice:
+          type: string
+          maxLength: 15
+      required:
+      - account_type
     DriverDocument:
       type: object
       description: 'Justificatif vu par le chauffeur. Le fichier n''est jamais renvoyé
@@ -1844,7 +2032,7 @@ components:
           readOnly: true
         doc_type:
           allOf:
-          - $ref: '#/components/schemas/DocTypeEnum'
+          - $ref: '#/components/schemas/DriverDocumentDocTypeEnum'
           title: Type
         doc_type_label:
           type: string
@@ -1902,6 +2090,26 @@ components:
       - is_expired
       - review_note
       - status
+    DriverDocumentDocTypeEnum:
+      enum:
+      - cin
+      - selfie
+      - permis
+      - carte_grise
+      - assurance
+      - visite_technique
+      - agrement
+      - autre
+      type: string
+      description: |-
+        * `cin` - Carte d'identité nationale
+        * `selfie` - Photo du visage (selfie)
+        * `permis` - Permis de conduire
+        * `carte_grise` - Carte grise
+        * `assurance` - Attestation d'assurance
+        * `visite_technique` - Visite technique
+        * `agrement` - Agrément / inscription transporteur
+        * `autre` - Autre
     DriverDocumentRequest:
       type: object
       description: 'Justificatif vu par le chauffeur. Le fichier n''est jamais renvoyé
@@ -1909,7 +2117,7 @@ components:
       properties:
         doc_type:
           allOf:
-          - $ref: '#/components/schemas/DocTypeEnum'
+          - $ref: '#/components/schemas/DriverDocumentDocTypeEnum'
           title: Type
         side:
           allOf:
@@ -2081,6 +2289,10 @@ components:
         rating_as_client:
           type: string
           readOnly: true
+        identity_status:
+          type: string
+          nullable: true
+          readOnly: true
         date_joined:
           type: string
           format: date-time
@@ -2091,6 +2303,7 @@ components:
       - driver_profile
       - full_name
       - id
+      - identity_status
       - phone
       - phone_verified
       - rating_as_client

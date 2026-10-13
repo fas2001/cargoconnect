@@ -1,5 +1,5 @@
 from drf_spectacular.utils import extend_schema
-from rest_framework import generics, permissions, status
+from rest_framework import generics, parsers, permissions, status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -10,10 +10,13 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from apps.common.exceptions import BusinessRuleError
 from apps.shipments.models import Shipment, ShipmentStatus
 
+from . import identity as identity_services
 from . import services
 from .models import PhoneOTP
 from .serializers import (
     ChangePasswordSerializer,
+    ClientDocumentSerializer,
+    ClientIdentitySerializer,
     LogoutSerializer,
     MeSerializer,
     OTPRequestSerializer,
@@ -124,3 +127,46 @@ class PasswordResetView(APIView):
         user.phone_verified = True  # le code reçu prouve la possession du numéro
         user.save(update_fields=["password", "phone_verified"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class IsClient(permissions.BasePermission):
+    message = "Réservé aux comptes expéditeurs."
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and not request.user.is_driver)
+
+
+class MyClientIdentityView(APIView):
+    """GET : identité de l'expéditeur (404 si non renseignée). PUT : la crée ou la met à jour."""
+
+    permission_classes = [IsClient]
+
+    @extend_schema(responses={200: ClientIdentitySerializer})
+    def get(self, request):
+        identity = getattr(request.user, "client_identity", None)
+        if identity is None:
+            return Response({"detail": "Identité non renseignée."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(ClientIdentitySerializer(identity).data)
+
+    @extend_schema(request=ClientIdentitySerializer, responses={200: ClientIdentitySerializer})
+    def put(self, request):
+        current = getattr(request.user, "client_identity", None)
+        serializer = ClientIdentitySerializer(current, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        identity = identity_services.save_identity(request.user, **serializer.validated_data)
+        return Response(ClientIdentitySerializer(identity).data)
+
+
+class MyClientDocumentsView(APIView):
+    permission_classes = [IsClient]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+
+    @extend_schema(request={"multipart/form-data": ClientDocumentSerializer}, responses={201: ClientDocumentSerializer})
+    def post(self, request):
+        identity = getattr(request.user, "client_identity", None)
+        if identity is None:
+            raise BusinessRuleError("Renseignez d'abord votre identité.", code="identity_missing")
+        serializer = ClientDocumentSerializer(data=request.data, context={"identity": identity})
+        serializer.is_valid(raise_exception=True)
+        document = identity_services.add_document(identity, **serializer.validated_data)
+        return Response(ClientDocumentSerializer(document).data, status=status.HTTP_201_CREATED)

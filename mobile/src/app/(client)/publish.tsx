@@ -3,12 +3,28 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert } from 'react-native';
 
-import { Screen } from '@/components/ui';
+import { Banner, Button, Screen } from '@/components/ui';
+import { useCurrentUser } from '@/features/auth/auth-context';
 import { CargoForm } from '@/features/cargos/cargo-form';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import { assetToFormData } from '@/services/upload';
 import { t } from '@/i18n';
+
+function IdentityReminder() {
+  const user = useCurrentUser();
+  if (user.identity_status !== 'missing' && user.identity_status !== 'incomplete' && user.identity_status !== 'rejected') return null;
+  return (
+    <>
+      <Banner
+        tone="warning"
+        icon="id-card-outline"
+        message={t('Avant de publier, complétez votre identité (CIN ou ICE). Vous pouvez déjà enregistrer un brouillon.')}
+      />
+      <Button title={t('Compléter mon identité')} variant="secondary" icon="id-card-outline" onPress={() => router.push('/identity')} />
+    </>
+  );
+}
 
 export default function Publish() {
   const queryClient = useQueryClient();
@@ -17,6 +33,7 @@ export default function Publish() {
 
   return (
     <Screen edges={[]}>
+      <IdentityReminder />
       <CargoForm
         key={formKey}
         submitLabel={t("Publier l'annonce")}

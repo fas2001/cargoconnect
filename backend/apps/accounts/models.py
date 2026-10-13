@@ -1,3 +1,4 @@
+import os
 import uuid
 
 from django.contrib.auth.hashers import check_password, make_password
@@ -5,7 +6,9 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 from django.utils import timezone
 
+from apps.common.models import BaseModel
 from apps.common.validators import normalize_phone
+from apps.drivers.models import DriverDocument, VerificationStatus, private_storage
 
 
 class UserManager(BaseUserManager):
@@ -101,3 +104,72 @@ class PhoneOTP(models.Model):
 
     def check_code(self, code: str) -> bool:
         return check_password(code, self.code_hash)
+
+
+ICE_PATTERN = r"^\d{15}$"
+CIN_PATTERN = r"^[A-Z]{1,2}\d{1,7}$"
+
+
+class ClientIdentity(BaseModel):
+    """
+    Identité de l'expéditeur, exigée avant sa première annonce publiée : particulier (CIN) ou
+    entreprise (raison sociale + ICE). Documents vérifiés par l'équipe ; « Client vérifié » ensuite.
+    """
+
+    class AccountType(models.TextChoices):
+        INDIVIDUAL = "individual", "Particulier"
+        COMPANY = "company", "Entreprise"
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="client_identity")
+    account_type = models.CharField("type de compte", max_length=10, choices=AccountType.choices)
+    cin_number = models.CharField("numéro de CIN", max_length=10, blank=True)
+    company_name = models.CharField("raison sociale", max_length=150, blank=True)
+    ice = models.CharField("ICE", max_length=15, blank=True)
+
+    verification_status = models.CharField(
+        "statut de vérification", max_length=10, choices=VerificationStatus.choices, default=VerificationStatus.PENDING
+    )
+    verified_at = models.DateTimeField("vérifié le", null=True, blank=True)
+    rejection_reason = models.CharField("motif du refus", max_length=255, blank=True)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "identité client"
+        verbose_name_plural = "identités clients"
+
+    def __str__(self):
+        return f"{self.company_name or self.user.full_name} ({self.get_account_type_display()})"
+
+    @property
+    def is_verified(self) -> bool:
+        return self.verification_status == VerificationStatus.VERIFIED
+
+
+def _client_document_path(instance, filename):
+    ext = os.path.splitext(filename)[1].lower()
+    return f"clients/{instance.identity_id}/{uuid.uuid4().hex}{ext}"
+
+
+class ClientDocument(BaseModel):
+    class DocType(models.TextChoices):
+        CIN = "cin", "Carte d'identité nationale"
+        BUSINESS_REGISTER = "registre_commerce", "Registre de commerce / attestation ICE"
+
+    identity = models.ForeignKey(ClientIdentity, on_delete=models.CASCADE, related_name="documents")
+    doc_type = models.CharField("type", max_length=20, choices=DocType.choices)
+    side = models.CharField("face", max_length=6, choices=DriverDocument.Side.choices, default=DriverDocument.Side.SINGLE)
+    file = models.FileField("fichier", upload_to=_client_document_path, storage=private_storage)
+    status = models.CharField(max_length=10, choices=VerificationStatus.choices, default=VerificationStatus.PENDING)
+    review_note = models.CharField("note de vérification", max_length=255, blank=True)
+    reviewed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+", verbose_name="vérifié par"
+    )
+    reviewed_at = models.DateTimeField("vérifié le", null=True, blank=True)
+    replaced_at = models.DateTimeField("remplacé le", null=True, blank=True)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "justificatif client"
+        verbose_name_plural = "justificatifs clients"
+
+    def __str__(self):
+        side = f" ({self.get_side_display().lower()})" if self.side != DriverDocument.Side.SINGLE else ""
+        return f"{self.get_doc_type_display()}{side} — {self.identity}"

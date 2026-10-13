@@ -131,7 +131,11 @@ class DriverDocument(BaseModel):
 class DocumentAccessLog(models.Model):
     """Chaque ouverture d'un justificatif par un membre de l'équipe."""
 
-    document = models.ForeignKey(DriverDocument, on_delete=models.CASCADE, related_name="access_logs")
+    # Justificatif chauffeur ou justificatif client (un seul des deux est renseigné).
+    document = models.ForeignKey(DriverDocument, on_delete=models.CASCADE, null=True, blank=True, related_name="access_logs")
+    client_document = models.ForeignKey(
+        "accounts.ClientDocument", on_delete=models.CASCADE, null=True, blank=True, related_name="access_logs"
+    )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     accessed_at = models.DateTimeField("consulté le", auto_now_add=True)
@@ -142,7 +146,7 @@ class DocumentAccessLog(models.Model):
         ordering = ["-accessed_at"]
 
     def __str__(self):
-        return f"{self.document} — {self.user} — {self.accessed_at:%d/%m/%Y %H:%M}"
+        return f"{self.document or self.client_document} — {self.user} — {self.accessed_at:%d/%m/%Y %H:%M}"
 
 
 class VerificationEvent(BaseModel):

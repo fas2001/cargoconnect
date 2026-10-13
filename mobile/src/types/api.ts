@@ -43,7 +43,31 @@ export type User = {
   roles: Role[];
   driver_profile: { id: string; company_name: string; verification_status: VerificationStatus } | null;
   rating_as_client: Rating;
+  /** Expéditeur : état de son identité (null pour un chauffeur). */
+  identity_status: IdentityStatus | null;
   date_joined: string;
+};
+
+export type IdentityStatus = 'missing' | 'incomplete' | 'pending' | 'verified' | 'rejected';
+export type AccountType = 'individual' | 'company';
+
+export type IdentityChecklistItem = {
+  doc_type: 'cin' | 'registre_commerce';
+  side: DocumentSide;
+  state: 'missing' | 'pending' | 'verified' | 'rejected';
+  document_id: string | null;
+  review_note: string;
+};
+
+export type ClientIdentity = {
+  account_type: AccountType;
+  cin_number: string;
+  company_name: string;
+  ice: string;
+  verification_status: VerificationStatus;
+  rejection_reason: string;
+  status: IdentityStatus;
+  checklist: IdentityChecklistItem[];
 };
 
 export type AuthResponse = { access: string; refresh: string; user: User };
@@ -177,7 +201,7 @@ export type CargoDetail = CargoSummary & {
   origin_address?: string;
   destination_address?: string;
   photos: { id: string; image: string; created_at: string }[];
-  client: { name: string; rating: Rating; member_since: string };
+  client: { name: string; rating: Rating; member_since: string; is_verified: boolean };
   cancel_reason: string;
   can_edit: boolean;
   my_offer: OwnOffer | null;

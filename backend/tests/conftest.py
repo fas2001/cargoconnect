@@ -8,7 +8,7 @@ from django.utils import timezone
 from PIL import Image
 from rest_framework.test import APIClient
 
-from apps.accounts.models import User
+from apps.accounts.models import ClientDocument, ClientIdentity, User
 from apps.cargos.models import Cargo, CargoStatus, City, GoodsCategory
 from apps.cargos.services import publish_cargo
 from apps.drivers.models import DriverProfile, VerificationStatus
@@ -49,9 +49,19 @@ def auth(user) -> APIClient:
     return client
 
 
+def give_identity(user, cin="AB123456"):
+    """Identité de particulier complète (CIN + photos recto/verso), en attente de vérification."""
+    identity = ClientIdentity.objects.create(user=user, account_type="individual", cin_number=cin)
+    for side in ("recto", "verso"):
+        ClientDocument.objects.create(identity=identity, doc_type="cin", side=side, file=proof_photo(f"cin-{side}.jpg"))
+    return identity
+
+
 @pytest.fixture
 def client_user(db):
-    return make_user("0611111111", "Karim Expéditeur")
+    user = make_user("0611111111", "Karim Expéditeur")
+    give_identity(user)
+    return user
 
 
 @pytest.fixture

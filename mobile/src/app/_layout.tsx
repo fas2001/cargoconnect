@@ -48,6 +48,7 @@ function RootNavigator() {
       <Stack.Screen name="shipment/[id]" options={{ title: t('Transport') }} />
       <Stack.Screen name="vehicles" options={{ title: t('Mes véhicules') }} />
       <Stack.Screen name="documents" options={{ title: t('Mes justificatifs') }} />
+      <Stack.Screen name="identity" options={{ title: t('Mon identité') }} />
       <Stack.Screen name="notifications" options={{ title: t('Notifications') }} />
     </Stack>
   );
