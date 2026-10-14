@@ -8,12 +8,26 @@ from . import services
 from .models import DocumentAccessLog, DriverDocument, DriverProfile, VerificationEvent, VerificationStatus
 
 
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def private_file_preview(url: str, filename: str) -> str:
+    """Aperçu (photo) ou lien (PDF, HEIC) vers la vue protégée ; chaque affichage est journalisé."""
+    if filename.lower().endswith(IMAGE_EXTENSIONS):
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener"><img src="{}" alt="Justificatif" '
+            'style="height:88px;max-width:140px;object-fit:cover;border-radius:8px;border:1px solid #ddd"></a>',
+            url,
+            url,
+        )
+    return format_html('<a href="{}" target="_blank" rel="noopener">Ouvrir le fichier</a>', url)
+
+
 def file_link(document: DriverDocument) -> str:
-    """Lien vers la vue protégée et journalisée : les fichiers n'ont pas d'URL publique."""
+    """Les fichiers n'ont pas d'URL publique : aperçu servi par la vue protégée et journalisée."""
     if not document.pk or not document.file:
         return "—"
-    url = reverse("admin-document-file", args=[document.pk])
-    return format_html('<a href="{}" target="_blank" rel="noopener">Ouvrir le fichier</a>', url)
+    return private_file_preview(reverse("admin-document-file", args=[document.pk]), document.file.name)
 
 
 class DriverDocumentInline(admin.TabularInline):

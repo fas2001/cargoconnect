@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.reviews",
     "apps.reports",
+    "apps.backoffice",
 ]
 
 MIDDLEWARE = [
@@ -85,7 +86,8 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Gabarits du projet (ex. accueil de l'administration web) : prioritaires sur ceux des applications.
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

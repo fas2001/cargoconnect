@@ -59,6 +59,7 @@ function RootNavigator() {
       <Stack.Screen name="documents" options={{ title: t('Mes justificatifs') }} />
       <Stack.Screen name="identity" options={{ title: t('Mon identité') }} />
       <Stack.Screen name="account" options={{ title: t('Mon compte') }} />
+      <Stack.Screen name="backoffice" options={{ headerShown: false }} />
       <Stack.Screen name="notifications" options={{ title: t('Notifications') }} />
     </Stack>
   );

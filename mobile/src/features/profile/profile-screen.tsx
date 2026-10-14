@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { type Href, router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -49,6 +49,10 @@ export function ProfileScreen({ role }: { role: Role }) {
         </View>
         <Button title={t('Modifier mon compte')} variant="secondary" icon="create-outline" onPress={() => router.push('/account')} />
       </Card>
+
+      {user.is_staff ? (
+        <Button title="Administration" icon="shield-checkmark-outline" onPress={() => router.push('/backoffice' as Href)} />
+      ) : null}
 
       {!user.phone_verified ? <PhoneVerification /> : null}
 

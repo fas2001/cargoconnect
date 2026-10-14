@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -9,7 +8,7 @@ import { Route } from '@/components/cargo-card';
 import { OptionPicker } from '@/components/option-picker';
 import { ProofSheet } from '@/components/proof-sheet';
 import { ReasonDialog } from '@/components/reason-dialog';
-import { SignatureView } from '@/components/signature-pad';
+import { EventProof } from '@/components/event-proof';
 import { ShipmentStatusBadge } from '@/components/status-badge';
 import { Banner, Button, Card, ErrorState, InfoRow, Loading, Screen, SectionTitle, TextField, textStyles } from '@/components/ui';
 import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
@@ -17,7 +16,7 @@ import { localName, t, tr } from '@/i18n';
 import { reportReasons, shipmentActionLabel, shipmentStatusLabel } from '@/i18n/labels';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
-import type { Contact, Shipment, ShipmentEvent, ShipmentProof, ShipmentStatus } from '@/types/api';
+import type { Contact, Shipment, ShipmentProof, ShipmentStatus } from '@/types/api';
 import { confirmAction } from '@/utils/confirm';
 import { formatDateTime, formatDay, formatPrice, formatWeight } from '@/utils/format';
 
@@ -185,37 +184,6 @@ export default function ShipmentScreen() {
   );
 }
 
-/** Preuves d'une étape : photos, lien vers la position, réceptionnaire et signature. */
-function EventProof({ event }: { event: ShipmentEvent }) {
-  if (!event.photos.length && !event.latitude && !event.signature) return null;
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`;
-  return (
-    <View style={styles.proof}>
-      {event.photos.length ? (
-        <View style={styles.proofPhotos}>
-          {event.photos.map((photo) => (
-            <Pressable key={photo.id} onPress={() => Linking.openURL(photo.image)} accessibilityRole="imagebutton" accessibilityLabel={t('Voir la photo')}>
-              <Image source={photo.image} style={styles.proofPhoto} contentFit="cover" />
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-      {event.latitude && event.longitude ? (
-        <Pressable onPress={() => Linking.openURL(mapUrl)} accessibilityRole="link" style={styles.mapLink}>
-          <Ionicons name="location-outline" size={16} color={Colors.primary} />
-          <Text style={styles.mapText}>
-            {event.location_accuracy_m !== null
-              ? t('Voir la position (±{meters} m)', { meters: Math.round(event.location_accuracy_m) })
-              : t('Voir la position')}
-          </Text>
-        </Pressable>
-      ) : null}
-      {event.receiver_name ? <Text style={textStyles.secondary}>{t('Réceptionné par {name}', { name: event.receiver_name })}</Text> : null}
-      {event.signature ? <SignatureView path={event.signature} /> : null}
-    </View>
-  );
-}
-
 function ProgressBar({ status }: { status: ShipmentStatus }) {
   const index = PROGRESS.indexOf(status);
   if (index < 0) return null;
@@ -332,9 +300,4 @@ const styles = StyleSheet.create({
   dotActive: { backgroundColor: Colors.primary },
   eventTitle: { fontSize: FontSize.small, fontFamily: Fonts.semibold, color: Colors.text },
   stars: { flexDirection: 'row', gap: Spacing.sm },
-  proof: { gap: Spacing.xs, marginTop: Spacing.xs },
-  proofPhotos: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
-  proofPhoto: { width: 64, height: 64, borderRadius: 8, backgroundColor: Colors.border },
-  mapLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  mapText: { fontSize: FontSize.small, color: Colors.primary, fontFamily: Fonts.semibold },
 });

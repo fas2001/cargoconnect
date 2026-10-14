@@ -1,0 +1,36 @@
+{% extends "admin/index.html" %}
+{% load backoffice %}
+
+{% block content %}
+{% cargoconnect_dashboard as d %}
+<style>
+  .cc-dash { margin-bottom: 24px; }
+  .cc-dash h2 { font-size: 15px; margin: 0 0 10px; }
+  .cc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .cc-tile { display: block; padding: 14px 16px; border-radius: 14px; background: var(--darkened-bg); border: 1px solid var(--hairline-color); color: var(--body-fg); text-decoration: none; }
+  .cc-tile:hover { border-color: var(--link-hover-color); }
+  .cc-tile strong { display: block; font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .cc-tile span { font-size: 13px; color: var(--body-quiet-color); }
+  .cc-tile.todo strong { color: #E35F00; }
+  .cc-tile.zero strong { color: var(--body-quiet-color); }
+</style>
+<section class="cc-dash">
+  <h2>À traiter</h2>
+  <div class="cc-grid">
+    <a class="cc-tile todo{% if not d.drivers_pending %} zero{% endif %}" href="{% url 'admin:drivers_driverprofile_changelist' %}?verification_status__exact=pending"><strong>{{ d.drivers_pending }}</strong><span>transporteurs à vérifier</span></a>
+    <a class="cc-tile todo{% if not d.identities_pending %} zero{% endif %}" href="{% url 'admin:accounts_clientidentity_changelist' %}?verification_status__exact=pending"><strong>{{ d.identities_pending }}</strong><span>identités clients à vérifier</span></a>
+    <a class="cc-tile todo{% if not d.documents_pending %} zero{% endif %}" href="{% url 'admin:drivers_driverdocument_changelist' %}?status__exact=pending&amp;replaced_at__isempty=1"><strong>{{ d.documents_pending }}</strong><span>justificatifs en attente</span></a>
+    <a class="cc-tile todo{% if not d.reports_open %} zero{% endif %}" href="{% url 'admin:reports_report_changelist' %}?status__exact=open"><strong>{{ d.reports_open }}</strong><span>signalements ouverts</span></a>
+    <a class="cc-tile todo{% if not d.shipments_disputed %} zero{% endif %}" href="{% url 'admin:shipments_shipment_changelist' %}?status__exact=disputed"><strong>{{ d.shipments_disputed }}</strong><span>transports en litige</span></a>
+  </div>
+  <h2>Activité</h2>
+  <div class="cc-grid">
+    <a class="cc-tile" href="{% url 'admin:accounts_user_changelist' %}"><strong>{{ d.users_total }}</strong><span>comptes actifs ({{ d.clients_total }} clients, {{ d.drivers_total }} transporteurs)</span></a>
+    <div class="cc-tile"><strong>{{ d.new_users_7d }}</strong><span>inscriptions sur 7 jours</span></div>
+    <a class="cc-tile" href="{% url 'admin:cargos_cargo_changelist' %}?status__exact=published"><strong>{{ d.cargos_published }}</strong><span>annonces publiées</span></a>
+    <a class="cc-tile" href="{% url 'admin:shipments_shipment_changelist' %}"><strong>{{ d.shipments_active }}</strong><span>transports en cours</span></a>
+    <div class="cc-tile"><strong>{{ d.shipments_completed }}</strong><span>transports livrés</span></div>
+  </div>
+</section>
+{{ block.super }}
+{% endblock %}

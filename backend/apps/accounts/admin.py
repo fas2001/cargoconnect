@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.utils.html import format_html
 
+from apps.drivers.admin import private_file_preview
 from apps.drivers.models import VerificationStatus
 
 from . import identity as identity_services
@@ -45,8 +46,7 @@ class ClientDocumentInline(admin.TabularInline):
     def open_file(self, obj):
         if not obj.pk:
             return "—"
-        url = reverse("admin-client-document-file", args=[obj.pk])
-        return format_html('<a href="{}" target="_blank" rel="noopener">Ouvrir le fichier</a>', url)
+        return private_file_preview(reverse("admin-client-document-file", args=[obj.pk]), obj.file.name)
 
     def has_add_permission(self, request, obj=None):
         return False

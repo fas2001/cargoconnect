@@ -44,6 +44,8 @@ api = [
     path("me/client-identity/", accounts.MyClientIdentityView.as_view(), name="my-client-identity"),
     path("me/client-identity/documents/", accounts.MyClientDocumentsView.as_view(), name="my-client-documents"),
     path("drivers/<uuid:pk>/", drivers.PublicDriverView.as_view(), name="driver-public"),
+    # Espace « Administration » de l'application (équipe uniquement)
+    path("backoffice/", include("apps.backoffice.urls")),
     # Cargaisons : offres imbriquées
     path("cargos/<uuid:pk>/offers/", cargos.CargoOffersView.as_view(), name="cargo-offers"),
     # Référentiels

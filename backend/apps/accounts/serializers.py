@@ -57,9 +57,10 @@ class MeSerializer(serializers.ModelSerializer):
             "driver_profile",
             "rating_as_client",
             "identity_status",
+            "is_staff",
             "date_joined",
         ]
-        read_only_fields = ["id", "phone", "phone_verified", "date_joined"]
+        read_only_fields = ["id", "phone", "phone_verified", "is_staff", "date_joined"]
 
     def get_driver_profile(self, user):
         if not user.is_driver:

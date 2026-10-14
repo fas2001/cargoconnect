@@ -46,6 +46,8 @@ export type User = {
   rating_as_client: Rating;
   /** Expéditeur : état de son identité (null pour un chauffeur). */
   identity_status: IdentityStatus | null;
+  /** Membre de l'équipe CargoConnect : accès à l'espace « Administration ». */
+  is_staff: boolean;
   date_joined: string;
 };
 
