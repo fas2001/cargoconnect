@@ -31,6 +31,11 @@ def tokens_for(user) -> dict:
     return {"refresh": str(refresh), "access": str(refresh.access_token)}
 
 
+class TokenPairSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+
+
 class DriverSummarySerializer(serializers.Serializer):
     id = serializers.UUIDField()
     company_name = serializers.CharField()

@@ -56,7 +56,8 @@ export const api = {
   /** Nouvelle photo de profil (multipart). Pour la retirer : updateMe({ avatar: null }). */
   uploadAvatar: (form: FormData) => apiRequest<User>('/me/', { method: 'PATCH', body: form }),
   changePassword: (body: { current_password: string; new_password: string }) =>
-    apiRequest<void>('/me/password/', { method: 'POST', body }),
+    // Les autres appareils sont déconnectés ; celui-ci reçoit de nouveaux jetons.
+    apiRequest<{ access: string; refresh: string }>('/me/password/', { method: 'POST', body }),
   verifyPhone: (code: string) => apiRequest<User>('/me/verify-phone/', { method: 'POST', body: { code } }),
   driverProfile: () => apiRequest<DriverProfile>('/me/driver-profile/'),
   vehicles: () => apiRequest<Paginated<Vehicle>>('/me/vehicles/'),

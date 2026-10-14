@@ -36,7 +36,18 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "CargoConnect utilise Face ID pour déverrouiller votre session."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "CargoConnect utilise Face ID pour déverrouiller votre session."
+        }
+      ],
       [
         "expo-image-picker",
         {

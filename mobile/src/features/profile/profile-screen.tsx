@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { type Href, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { VerificationBadge } from '@/components/status-badge';
@@ -11,8 +12,10 @@ import { LanguageSwitch } from '@/components/language-switch';
 import { Banner, Button, Card, Chevron, type IconName, Screen, TextField, textStyles } from '@/components/ui';
 import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { useAuth, useCurrentUser } from '@/features/auth/auth-context';
+import { useBiometrics } from '@/features/auth/biometrics';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
+import { tokenStorage } from '@/services/token-storage';
 import { assetToFormData } from '@/services/upload';
 import type { IdentityStatus, Role } from '@/types/api';
 import { t } from '@/i18n';
@@ -82,6 +85,8 @@ export function ProfileScreen({ role }: { role: Role }) {
         <MenuRow icon="notifications-outline" label={t('Notifications')} onPress={() => router.push('/notifications')} />
         <LanguageRow />
       </Card>
+
+      <SecuritySection />
 
       <Button title={t('Se déconnecter')} variant="danger" icon="log-out-outline" onPress={confirmLogout} />
       <Text style={[textStyles.caption, { textAlign: 'center' }]}>{t('CargoConnect — version MVP')}</Text>
@@ -170,6 +175,68 @@ function ProfilePhoto() {
         <Ionicons name={busy ? 'hourglass-outline' : 'camera'} size={14} color={Colors.white} />
       </View>
     </Pressable>
+  );
+}
+
+/** Sécurité : déverrouillage par empreinte / Face ID et accès au changement de mot de passe. */
+function SecuritySection() {
+  const user = useCurrentUser();
+  const biometrics = useBiometrics();
+  const [enabled, setEnabled] = useState(tokenStorage.isBiometricEnabled);
+  const [busy, setBusy] = useState(false);
+  const remembered = tokenStorage.isRemembered();
+
+  const toggle = async (on: boolean) => {
+    if (!biometrics) return;
+    setBusy(true);
+    try {
+      if (on) {
+        const prompt = t('Activer le déverrouillage par {method}', { method: biometrics.label });
+        // iOS ne demande pas Face ID à l'enregistrement de la clé : on vérifie d'abord que c'est bien vous.
+        if (Platform.OS === 'ios') {
+          const check = await LocalAuthentication.authenticateAsync({ promptMessage: prompt, cancelLabel: t('Annuler') });
+          if (!check.success) return;
+        }
+        await tokenStorage.enableBiometric(prompt, user.phone);
+      } else {
+        await tokenStorage.disableBiometric();
+      }
+      setEnabled(on);
+    } catch {
+      // Annulation de l'empreinte sur Android, ou capteur indisponible : rien n'a changé.
+      if (on) Alert.alert(t('Activation impossible'), t('La vérification n’a pas abouti. Réessayez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <Text style={styles.cardTitle}>{t('Sécurité')}</Text>
+      {Platform.OS !== 'web' && biometrics ? (
+        <>
+          <View style={styles.menuRow}>
+            <Ionicons name={biometrics.icon} size={20} color={Colors.primary} />
+            <Text style={styles.menuLabel}>{t('Déverrouiller avec {method}', { method: biometrics.label })}</Text>
+            <Switch
+              value={enabled}
+              onValueChange={(v) => void toggle(v)}
+              disabled={busy || !biometrics.available || !remembered}
+              trackColor={{ true: Colors.cta, false: Colors.border }}
+              thumbColor={Colors.white}
+            />
+          </View>
+          <Text style={textStyles.caption}>
+            {!biometrics.available
+              ? t('Aucune empreinte ni Face ID n’est enregistré sur ce téléphone (réglages du téléphone).')
+              : !remembered
+                ? t('Reconnectez-vous en cochant « Se souvenir de moi » pour utiliser cette option.')
+                : t('À chaque ouverture, l’application demandera votre {method}. Votre empreinte reste dans le téléphone : CargoConnect ne la reçoit jamais. Après « Se déconnecter », elle permet de revenir sans mot de passe ; pour tout effacer, désactivez-la d’abord.', { method: biometrics.label })}
+          </Text>
+        </>
+      ) : null}
+      <MenuRow icon="key-outline" label={t('Changer le mot de passe')} onPress={() => router.push('/account')} />
+    </Card>
   );
 }
 

@@ -149,6 +149,499 @@ paths:
               schema:
                 $ref: '#/components/schemas/Register'
           description: ''
+  /api/backoffice/cargos/:
+    get:
+      operationId: backoffice_cargos_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminCargoList'
+          description: ''
+  /api/backoffice/client-documents/{id}/decision/:
+    post:
+      operationId: backoffice_client_documents_decision_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminClientDocument'
+          description: ''
+  /api/backoffice/client-documents/{id}/file/:
+    get:
+      operationId: backoffice_client_documents_file_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/backoffice/dashboard/:
+    get:
+      operationId: backoffice_dashboard_retrieve
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/backoffice/driver-documents/{id}/decision/:
+    post:
+      operationId: backoffice_driver_documents_decision_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDriverDocument'
+          description: ''
+  /api/backoffice/driver-documents/{id}/file/:
+    get:
+      operationId: backoffice_driver_documents_file_retrieve
+      description: Image ou PDF du justificatif, chaque ouverture étant journalisée
+        (comme dans l'administration web).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/backoffice/drivers/:
+    get:
+      operationId: backoffice_drivers_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminDriverListList'
+          description: ''
+  /api/backoffice/drivers/{id}/:
+    get:
+      operationId: backoffice_drivers_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDriverDetail'
+          description: ''
+  /api/backoffice/drivers/{id}/decision/:
+    post:
+      operationId: backoffice_drivers_decision_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDriverDetail'
+          description: ''
+  /api/backoffice/identities/:
+    get:
+      operationId: backoffice_identities_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminIdentityListList'
+          description: ''
+  /api/backoffice/identities/{id}/:
+    get:
+      operationId: backoffice_identities_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminIdentityDetail'
+          description: ''
+  /api/backoffice/identities/{id}/decision/:
+    post:
+      operationId: backoffice_identities_decision_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminIdentityDetail'
+          description: ''
+  /api/backoffice/reports/:
+    get:
+      operationId: backoffice_reports_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminReportList'
+          description: ''
+  /api/backoffice/reports/{id}/:
+    patch:
+      operationId: backoffice_reports_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminReportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminReportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminReportRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReport'
+          description: ''
+  /api/backoffice/shipments/:
+    get:
+      operationId: backoffice_shipments_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminShipmentListList'
+          description: ''
+  /api/backoffice/shipments/{id}/:
+    get:
+      operationId: backoffice_shipments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminShipmentDetail'
+          description: ''
+  /api/backoffice/users/:
+    get:
+      operationId: backoffice_users_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+          enum:
+          - client
+          - driver
+          - staff
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - backoffice
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminUserList'
+          description: ''
+  /api/backoffice/users/{id}/activation/:
+    post:
+      operationId: backoffice_users_activation_create
+      description: Suspendre ou réactiver un compte (fraude, abus...). Un compte de
+        l'équipe ne se suspend pas d'ici.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                is_active:
+                  type: boolean
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
   /api/cargos/:
     get:
       operationId: cargos_list
@@ -738,6 +1231,8 @@ paths:
   /api/me/password/:
     post:
       operationId: me_password_create
+      description: Les autres appareils sont déconnectés ; celui-ci reçoit de nouveaux
+        jetons et reste connecté.
       tags:
       - me
       requestBody:
@@ -755,8 +1250,12 @@ paths:
       security:
       - jwtAuth: []
       responses:
-        '204':
-          description: No response body
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+          description: ''
   /api/me/vehicles/:
     get:
       operationId: me_vehicles_list
@@ -1433,6 +1932,663 @@ components:
       description: |-
         * `individual` - Particulier
         * `company` - Entreprise
+    AdminCargo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          title: Titre
+          maxLength: 120
+        client:
+          type: string
+        origin:
+          type: string
+        destination:
+          type: string
+        loading_date:
+          type: string
+          format: date
+          title: Date de chargement souhaitée
+        weight_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Poids (kg)
+        proposed_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          title: Prix proposé
+        declared_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          title: Valeur déclarée de la marchandise
+        status:
+          $ref: '#/components/schemas/CargoStatusEnum'
+        status_label:
+          type: string
+        offers_count:
+          type: integer
+        shipment_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - client
+      - created_at
+      - destination
+      - id
+      - loading_date
+      - offers_count
+      - origin
+      - status_label
+      - title
+      - weight_kg
+    AdminClientDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        doc_type:
+          allOf:
+          - $ref: '#/components/schemas/DocType660Enum'
+          title: Type
+        doc_type_label:
+          type: string
+        side:
+          allOf:
+          - $ref: '#/components/schemas/SideEnum'
+          title: Face
+        status:
+          $ref: '#/components/schemas/VerificationStatusEnum'
+        review_note:
+          type: string
+          title: Note de vérification
+          maxLength: 255
+        file_url:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - created_at
+      - doc_type
+      - doc_type_label
+      - file_url
+      - id
+    AdminDriverDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        phone:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+          readOnly: true
+        company_name:
+          type: string
+          title: Entreprise
+          maxLength: 150
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          title: Statut de vérification
+        progress:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        phone_verified:
+          type: boolean
+        is_active:
+          type: boolean
+        rejection_reason:
+          type: string
+          title: Motif du refus
+          maxLength: 255
+        vehicles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vehicle'
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminDriverDocument'
+          readOnly: true
+        checklist:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/VerificationEvent'
+      required:
+      - avatar
+      - checklist
+      - created_at
+      - documents
+      - email
+      - events
+      - id
+      - is_active
+      - name
+      - phone
+      - phone_verified
+      - progress
+      - user_id
+      - vehicles
+    AdminDriverDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        doc_type:
+          allOf:
+          - $ref: '#/components/schemas/DocType13cEnum'
+          title: Type
+        doc_type_label:
+          type: string
+        side:
+          allOf:
+          - $ref: '#/components/schemas/SideEnum'
+          title: Face
+        vehicle_label:
+          type: string
+          default: ''
+        document_number:
+          type: string
+          title: Numéro
+          maxLength: 60
+        holder_name:
+          type: string
+          title: Nom du titulaire
+          maxLength: 150
+        issuer:
+          type: string
+          title: Émetteur / assureur
+          maxLength: 120
+        expires_on:
+          type: string
+          format: date
+          nullable: true
+          title: Expire le
+        covers_goods:
+          type: boolean
+          nullable: true
+          title: Couvre la marchandise transportée
+        data_source:
+          allOf:
+          - $ref: '#/components/schemas/DataSourceEnum'
+          title: Source des informations
+        status:
+          $ref: '#/components/schemas/VerificationStatusEnum'
+        review_note:
+          type: string
+          title: Note de vérification
+          maxLength: 255
+        is_expired:
+          type: boolean
+        file_url:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - created_at
+      - doc_type
+      - doc_type_label
+      - file_url
+      - id
+      - is_expired
+    AdminDriverList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        phone:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+          readOnly: true
+        company_name:
+          type: string
+          title: Entreprise
+          maxLength: 150
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          title: Statut de vérification
+        progress:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - avatar
+      - created_at
+      - id
+      - name
+      - phone
+      - progress
+    AdminIdentityDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        phone:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+          readOnly: true
+        account_type:
+          allOf:
+          - $ref: '#/components/schemas/AccountTypeEnum'
+          title: Type de compte
+        cin_number:
+          type: string
+          title: Numéro de CIN
+          maxLength: 10
+        company_name:
+          type: string
+          title: Raison sociale
+          maxLength: 150
+        ice:
+          type: string
+          maxLength: 15
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          title: Statut de vérification
+        status:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        is_active:
+          type: boolean
+        rejection_reason:
+          type: string
+          title: Motif du refus
+          maxLength: 255
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminClientDocument'
+          readOnly: true
+        checklist:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - account_type
+      - avatar
+      - checklist
+      - created_at
+      - documents
+      - email
+      - id
+      - is_active
+      - name
+      - phone
+      - status
+      - user_id
+    AdminIdentityList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        phone:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+          readOnly: true
+        account_type:
+          allOf:
+          - $ref: '#/components/schemas/AccountTypeEnum'
+          title: Type de compte
+        cin_number:
+          type: string
+          title: Numéro de CIN
+          maxLength: 10
+        company_name:
+          type: string
+          title: Raison sociale
+          maxLength: 150
+        ice:
+          type: string
+          maxLength: 15
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          title: Statut de vérification
+        status:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - account_type
+      - avatar
+      - created_at
+      - id
+      - name
+      - phone
+      - status
+    AdminReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/ReasonEnum'
+          readOnly: true
+        reason_label:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/ReportStatusEnum'
+        status_label:
+          type: string
+          readOnly: true
+        admin_note:
+          type: string
+        reporter:
+          type: string
+          readOnly: true
+        reporter_phone:
+          type: string
+          readOnly: true
+        reported_user:
+          type: string
+          readOnly: true
+          default: ''
+        cargo:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        cargo_title:
+          type: string
+          readOnly: true
+          default: ''
+        shipment:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - cargo
+      - cargo_title
+      - created_at
+      - description
+      - id
+      - reason
+      - reason_label
+      - reported_user
+      - reporter
+      - reporter_phone
+      - shipment
+      - status_label
+    AdminShipmentDetail:
+      type: object
+      description: 'Tout le dossier d''un transport, preuves comprises : utile en
+        cas de litige ou de vol.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+        origin:
+          type: string
+        destination:
+          type: string
+        client:
+          type: string
+        driver:
+          type: string
+        status:
+          $ref: '#/components/schemas/ShipmentStatusEnum'
+        status_label:
+          type: string
+        agreed_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Tarif convenu
+        currency:
+          type: string
+          maxLength: 3
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        client_phone:
+          type: string
+        driver_phone:
+          type: string
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+        origin_address:
+          type: string
+        destination_address:
+          type: string
+        declared_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        recipient_name:
+          type: string
+        recipient_phone:
+          type: string
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShipmentEvent'
+      required:
+      - agreed_price
+      - client
+      - client_phone
+      - confirmed_at
+      - declared_value
+      - destination
+      - destination_address
+      - driver
+      - driver_phone
+      - events
+      - id
+      - origin
+      - origin_address
+      - recipient_name
+      - recipient_phone
+      - status_label
+      - title
+      - vehicle
+    AdminShipmentList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+        origin:
+          type: string
+        destination:
+          type: string
+        client:
+          type: string
+        driver:
+          type: string
+        status:
+          $ref: '#/components/schemas/ShipmentStatusEnum'
+        status_label:
+          type: string
+        agreed_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Tarif convenu
+        currency:
+          type: string
+          maxLength: 3
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - agreed_price
+      - client
+      - confirmed_at
+      - destination
+      - driver
+      - id
+      - origin
+      - status_label
+      - title
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        full_name:
+          type: string
+          title: Nom complet
+          maxLength: 150
+        phone:
+          type: string
+          title: Téléphone
+          maxLength: 16
+        email:
+          title: E-mail
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        avatar:
+          type: string
+          nullable: true
+          readOnly: true
+        role:
+          type: string
+          readOnly: true
+        verification:
+          type: string
+          readOnly: true
+        driver_id:
+          type: string
+          format: uuid
+        identity_id:
+          type: string
+          format: uuid
+        phone_verified:
+          type: boolean
+          title: Téléphone vérifié
+        is_active:
+          type: boolean
+          title: Actif
+        is_staff:
+          type: boolean
+          title: Équipe
+        date_joined:
+          type: string
+          format: date-time
+          title: Inscrit le
+      required:
+      - avatar
+      - full_name
+      - id
+      - phone
+      - role
+      - verification
     BlankEnum:
       enum:
       - ''
@@ -1905,7 +3061,7 @@ components:
           readOnly: true
         doc_type:
           allOf:
-          - $ref: '#/components/schemas/ClientDocumentDocTypeEnum'
+          - $ref: '#/components/schemas/DocType660Enum'
           title: Type
         side:
           allOf:
@@ -1930,14 +3086,6 @@ components:
       - id
       - review_note
       - status
-    ClientDocumentDocTypeEnum:
-      enum:
-      - cin
-      - registre_commerce
-      type: string
-      description: |-
-        * `cin` - Carte d'identité nationale
-        * `registre_commerce` - Registre de commerce / attestation ICE
     ClientDocumentRequest:
       type: object
       description: 'Document d''identité du client. Le fichier n''est jamais renvoyé
@@ -1945,7 +3093,7 @@ components:
       properties:
         doc_type:
           allOf:
-          - $ref: '#/components/schemas/ClientDocumentDocTypeEnum'
+          - $ref: '#/components/schemas/DocType660Enum'
           title: Type
         side:
           allOf:
@@ -2027,6 +3175,63 @@ components:
           maxLength: 15
       required:
       - account_type
+    DataSourceEnum:
+      enum:
+      - declared
+      - admin
+      - ocr
+      type: string
+      description: |-
+        * `declared` - Saisi par le chauffeur
+        * `admin` - Corrigé par l'administration
+        * `ocr` - Extrait automatiquement (OCR)
+    DecisionRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/DecisionStatusEnum'
+        reason:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - status
+    DecisionStatusEnum:
+      enum:
+      - verified
+      - rejected
+      type: string
+      description: |-
+        * `verified` - verified
+        * `rejected` - rejected
+    DocType13cEnum:
+      enum:
+      - cin
+      - selfie
+      - permis
+      - carte_grise
+      - assurance
+      - visite_technique
+      - agrement
+      - autre
+      type: string
+      description: |-
+        * `cin` - Carte d'identité nationale
+        * `selfie` - Photo du visage (selfie)
+        * `permis` - Permis de conduire
+        * `carte_grise` - Carte grise
+        * `assurance` - Attestation d'assurance
+        * `visite_technique` - Visite technique
+        * `agrement` - Agrément / inscription transporteur
+        * `autre` - Autre
+    DocType660Enum:
+      enum:
+      - cin
+      - registre_commerce
+      type: string
+      description: |-
+        * `cin` - Carte d'identité nationale
+        * `registre_commerce` - Registre de commerce / attestation ICE
     DriverDocument:
       type: object
       description: 'Justificatif vu par le chauffeur. Le fichier n''est jamais renvoyé
@@ -2038,7 +3243,7 @@ components:
           readOnly: true
         doc_type:
           allOf:
-          - $ref: '#/components/schemas/DriverDocumentDocTypeEnum'
+          - $ref: '#/components/schemas/DocType13cEnum'
           title: Type
         doc_type_label:
           type: string
@@ -2096,26 +3301,6 @@ components:
       - is_expired
       - review_note
       - status
-    DriverDocumentDocTypeEnum:
-      enum:
-      - cin
-      - selfie
-      - permis
-      - carte_grise
-      - assurance
-      - visite_technique
-      - agrement
-      - autre
-      type: string
-      description: |-
-        * `cin` - Carte d'identité nationale
-        * `selfie` - Photo du visage (selfie)
-        * `permis` - Permis de conduire
-        * `carte_grise` - Carte grise
-        * `assurance` - Attestation d'assurance
-        * `visite_technique` - Visite technique
-        * `agrement` - Agrément / inscription transporteur
-        * `autre` - Autre
     DriverDocumentRequest:
       type: object
       description: 'Justificatif vu par le chauffeur. Le fichier n''est jamais renvoyé
@@ -2123,7 +3308,7 @@ components:
       properties:
         doc_type:
           allOf:
-          - $ref: '#/components/schemas/DriverDocumentDocTypeEnum'
+          - $ref: '#/components/schemas/DocType13cEnum'
           title: Type
         side:
           allOf:
@@ -2303,6 +3488,10 @@ components:
           type: string
           nullable: true
           readOnly: true
+        is_staff:
+          type: boolean
+          readOnly: true
+          title: Équipe
         date_joined:
           type: string
           format: date-time
@@ -2314,6 +3503,7 @@ components:
       - full_name
       - id
       - identity_status
+      - is_staff
       - phone
       - phone_verified
       - rating_as_client
@@ -2561,6 +3751,144 @@ components:
       - status_label
       - updated_at
       - vehicle
+    PaginatedAdminCargoList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminCargo'
+    PaginatedAdminDriverListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminDriverList'
+    PaginatedAdminIdentityListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminIdentityList'
+    PaginatedAdminReportList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminReport'
+    PaginatedAdminShipmentListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminShipmentList'
+    PaginatedAdminUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUser'
     PaginatedCargoListList:
       type: object
       required:
@@ -2740,6 +4068,13 @@ components:
       - code
       - new_password
       - phone
+    PatchedAdminReportRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ReportStatusEnum'
+        admin_note:
+          type: string
     PatchedCargoWriteRequest:
       type: object
       properties:
@@ -3446,6 +4781,16 @@ components:
       description: |-
         * `driver` - Chauffeur
         * `client` - Client
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
     TokenRefresh:
       type: object
       properties:
@@ -3551,6 +4896,36 @@ components:
       - capacity_kg
       - registration_number
       - truck_type
+    VerificationEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          title: Décision
+        reason:
+          type: string
+          title: Motif
+          maxLength: 255
+        decided_by:
+          type: string
+          default: ''
+        document:
+          type: string
+          default: ''
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - created_at
+      - id
+      - status
     VerificationStatusEnum:
       enum:
       - pending

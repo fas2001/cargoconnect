@@ -6,6 +6,7 @@ import { useAuth, useCurrentUser } from '@/features/auth/auth-context';
 import { t } from '@/i18n';
 import { ApiError, errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
+import { tokenStorage } from '@/services/token-storage';
 
 /** Mon compte : nom, e-mail et mot de passe. Le numéro de téléphone sert d'identifiant et ne se modifie pas ici. */
 export default function Account() {
@@ -81,11 +82,12 @@ function PasswordChange() {
     }
     setSaving(true);
     try {
-      await api.changePassword({ current_password: current, new_password: next });
+      const tokens = await api.changePassword({ current_password: current, new_password: next });
+      await tokenStorage.setTokens(tokens.access, tokens.refresh);
       setCurrent('');
       setNext('');
       setConfirm('');
-      setMessage({ tone: 'success', text: t('Mot de passe modifié.') });
+      setMessage({ tone: 'success', text: t('Mot de passe modifié. Vos autres appareils ont été déconnectés.') });
     } catch (e) {
       if (e instanceof ApiError && Object.keys(e.fieldErrors).length) setErrors(e.fieldErrors);
       else setMessage({ tone: 'danger', text: errorMessage(e) });

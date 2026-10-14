@@ -482,6 +482,23 @@ export const ar = {
   'Vérification de votre identité': 'التحقق من هويتك',
   'Votre identité est vérifiée : le badge « Client vérifié » apparaît sur vos annonces.': 'تم توثيق هويتك: تظهر شارة « زبون موثق » على إعلاناتك.',
   'Indiquez votre prénom et votre nom.': 'أدخل اسمك الشخصي والعائلي.',
+  'Se souvenir de moi': 'تذكرني',
+  'Vous serez déconnecté à la fermeture de l’application. Conseillé sur un téléphone partagé.': 'سيتم تسجيل خروجك عند إغلاق التطبيق. يُنصح بذلك على هاتف مشترك.',
+  'Mot de passe modifié. Vos autres appareils ont été déconnectés.': 'تم تغيير كلمة المرور. تم تسجيل الخروج من أجهزتك الأخرى.',
+  'empreinte digitale': 'البصمة',
+  'Déverrouiller CargoConnect': 'فتح CargoConnect',
+  'Votre session est protégée. Déverrouillez pour continuer.': 'جلستك محمية. افتح القفل للمتابعة.',
+  'Déverrouiller': 'فتح القفل',
+  'Se connecter avec le mot de passe': 'الدخول بكلمة المرور',
+  'Sécurité': 'الأمان',
+  'Activer le déverrouillage par {method}': 'تفعيل الفتح بواسطة {method}',
+  'Déverrouiller avec {method}': 'الفتح بواسطة {method}',
+  'Activation impossible': 'تعذر التفعيل',
+  'La vérification n’a pas abouti. Réessayez.': 'لم ينجح التحقق. حاول مرة أخرى.',
+  'Aucune empreinte ni Face ID n’est enregistré sur ce téléphone (réglages du téléphone).': 'لا توجد بصمة أو Face ID مسجلة على هذا الهاتف (إعدادات الهاتف).',
+  'Reconnectez-vous en cochant « Se souvenir de moi » pour utiliser cette option.': 'أعد تسجيل الدخول مع تفعيل « تذكرني » لاستعمال هذا الخيار.',
+  'À chaque ouverture, l’application demandera votre {method}. Votre empreinte reste dans le téléphone : CargoConnect ne la reçoit jamais. Après « Se déconnecter », elle permet de revenir sans mot de passe ; pour tout effacer, désactivez-la d’abord.': 'عند كل فتح، سيطلب التطبيق {method}. تبقى بصمتك داخل الهاتف: لا يتوصل بها CargoConnect أبدًا. بعد « تسجيل الخروج » يمكنك العودة بدون كلمة المرور؛ لمسح كل شيء، عطّل هذا الخيار أولًا.',
+  'Se connecter avec {method}': 'الدخول بواسطة {method}',
 };
 
 export type TKey = keyof typeof ar;

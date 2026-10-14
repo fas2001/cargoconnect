@@ -120,6 +120,24 @@ def test_change_password(client_user):
     wrong = api.post("/api/me/password/", {"current_password": "mauvais", "new_password": "Nouveau-Mot-2026"}, format="json")
     assert wrong.status_code == 400
     ok = api.post("/api/me/password/", {"current_password": PASSWORD, "new_password": "Nouveau-Mot-2026"}, format="json")
-    assert ok.status_code == 204
+    assert ok.status_code == 200
     client_user.refresh_from_db()
     assert client_user.check_password("Nouveau-Mot-2026")
+
+
+@pytest.mark.django_db
+def test_password_change_logs_out_other_devices(client_user):
+    anon = APIClient()
+    phone_a = anon.post("/api/auth/login/", {"phone": "0611111111", "password": PASSWORD}).data
+    phone_b = anon.post("/api/auth/login/", {"phone": "0611111111", "password": PASSWORD}).data
+
+    api = APIClient()
+    api.credentials(HTTP_AUTHORIZATION=f"Bearer {phone_a['access']}")
+    changed = api.post("/api/me/password/", {"current_password": PASSWORD, "new_password": "Nouveau-Mot-2026"}, format="json")
+    assert changed.status_code == 200
+
+    # L'autre téléphone ne peut plus renouveler sa session, ni l'ancien jeton de celui-ci.
+    assert anon.post("/api/auth/refresh/", {"refresh": phone_b["refresh"]}).status_code == 401
+    assert anon.post("/api/auth/refresh/", {"refresh": phone_a["refresh"]}).status_code == 401
+    # Le téléphone qui a changé le mot de passe reste connecté avec ses nouveaux jetons.
+    assert anon.post("/api/auth/refresh/", {"refresh": changed.data["refresh"]}).status_code == 200

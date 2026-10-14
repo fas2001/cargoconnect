@@ -24,6 +24,7 @@ from .serializers import (
     PasswordResetSerializer,
     PhoneTokenObtainPairSerializer,
     RegisterSerializer,
+    TokenPairSerializer,
     tokens_for,
 )
 
@@ -77,13 +78,16 @@ class MeView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ChangePasswordView(APIView):
-    @extend_schema(request=ChangePasswordSerializer, responses={204: None})
+    """Les autres appareils sont déconnectés ; celui-ci reçoit de nouveaux jetons et reste connecté."""
+
+    @extend_schema(request=ChangePasswordSerializer, responses={200: TokenPairSerializer})
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save(update_fields=["password"])
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        services.revoke_all_sessions(request.user)
+        return Response(tokens_for(request.user))
 
 
 class OTPRequestView(APIView):
@@ -128,6 +132,7 @@ class PasswordResetView(APIView):
         user.set_password(data["new_password"])
         user.phone_verified = True  # le code reçu prouve la possession du numéro
         user.save(update_fields=["password", "phone_verified"])
+        services.revoke_all_sessions(user)  # un éventuel voleur de session est déconnecté
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

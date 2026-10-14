@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/features/auth/auth-context';
+import { LockScreen } from '@/features/auth/lock-screen';
 import { ApiError } from '@/services/api';
 import { initLanguage, t, useLanguage } from '@/i18n';
 
@@ -38,6 +39,7 @@ function RootNavigator() {
   }, [status]);
 
   if (status === 'loading') return null;
+  if (status === 'locked') return <LockScreen />;
 
   return (
     <Stack

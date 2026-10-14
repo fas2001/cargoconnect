@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { setSessionExpiredHandler } from '@/services/api';
+import { ApiError, setSessionExpiredHandler } from '@/services/api';
 import { api } from '@/services/endpoints';
 import { tokenStorage } from '@/services/token-storage';
 import type { AuthResponse, RegisterData, Role, User } from '@/types/api';
@@ -9,10 +9,14 @@ import type { AuthResponse, RegisterData, Role, User } from '@/types/api';
 type AuthState =
   | { status: 'loading'; user: null; activeRole: null }
   | { status: 'signedOut'; user: null; activeRole: null }
+  /** Session protégée par empreinte / Face ID, en attente de déverrouillage. */
+  | { status: 'locked'; user: null; activeRole: null }
   | { status: 'signedIn'; user: User; activeRole: Role };
 
 type AuthContextValue = AuthState & {
-  login: (phone: string, password: string) => Promise<void>;
+  login: (phone: string, password: string, remember: boolean) => Promise<void>;
+  /** Demande l'empreinte / Face ID. Renvoie false si l'utilisateur annule. */
+  unlock: (prompt: string) => Promise<boolean>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<User | null>;
@@ -43,7 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void signOutLocally();
     });
     (async () => {
-      if (!(await tokenStorage.getAccess())) {
+      const restored = await tokenStorage.restore().catch(() => 'none' as const);
+      if (restored === 'locked') {
+        setState({ status: 'locked', user: null, activeRole: null });
+        return;
+      }
+      if (restored === 'none') {
         setState(SIGNED_OUT);
         return;
       }
@@ -57,8 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [signIn, signOutLocally]);
 
   const handleAuth = useCallback(
-    async (response: AuthResponse) => {
-      await tokenStorage.setTokens(response.access, response.refresh);
+    async (response: AuthResponse, remember: boolean) => {
+      await tokenStorage.startSession(response.access, response.refresh, remember);
       signIn(response.user);
     },
     [signIn],
@@ -67,9 +76,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
-      login: async (phone, password) => handleAuth(await api.login({ phone, password })),
-      register: async (data) => handleAuth(await api.register(data)),
+      login: async (phone, password, remember) => {
+        await handleAuth(await api.login({ phone, password }), remember);
+        await tokenStorage.setRememberedPhone(remember ? phone : null);
+      },
+      register: async (data) => {
+        await handleAuth(await api.register(data), true);
+        await tokenStorage.setRememberedPhone(data.phone);
+      },
+      unlock: async (prompt) => {
+        try {
+          if (!(await tokenStorage.unlock(prompt))) return false;
+          signIn(await api.me());
+          return true;
+        } catch (e) {
+          // Empreintes modifiées sur le téléphone, session expirée… : connexion par mot de passe.
+          if (e instanceof ApiError && e.code === 'network') throw e;
+          await signOutLocally();
+          return false;
+        }
+      },
       logout: async () => {
+        if (tokenStorage.isBiometricEnabled()) {
+          await tokenStorage.signOutKeepingBiometric();
+          queryClient.clear();
+          setState(SIGNED_OUT);
+          return;
+        }
         const refresh = await tokenStorage.getRefresh();
         if (refresh) await api.logout(refresh).catch(() => undefined);
         await signOutLocally();
@@ -84,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [state, handleAuth, signOutLocally],
+    [state, handleAuth, signIn, signOutLocally, queryClient],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

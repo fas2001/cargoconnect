@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import APIException
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 from apps.common.exceptions import BusinessRuleError
 
@@ -54,3 +55,12 @@ def consume_otp(*, phone: str, purpose: str, code: str) -> None:
         raise BusinessRuleError("Code incorrect.", code="otp_invalid")
     otp.used_at = timezone.now()
     otp.save(update_fields=["used_at"])
+
+
+def revoke_all_sessions(user: User) -> None:
+    """Déconnecte tous les appareils : chaque jeton de rafraîchissement encore valide est mis en liste noire.
+
+    Les jetons d'accès déjà émis restent utilisables jusqu'à leur expiration (30 minutes au plus).
+    """
+    outstanding = OutstandingToken.objects.filter(user=user, expires_at__gt=timezone.now(), blacklistedtoken__isnull=True)
+    BlacklistedToken.objects.bulk_create([BlacklistedToken(token=token) for token in outstanding], ignore_conflicts=True)
