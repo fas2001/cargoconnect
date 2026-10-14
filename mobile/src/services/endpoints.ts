@@ -52,7 +52,9 @@ export const api = {
 
   // Profil
   me: () => apiRequest<User>('/me/'),
-  updateMe: (body: Partial<Pick<User, 'full_name' | 'email'>>) => apiRequest<User>('/me/', { method: 'PATCH', body }),
+  updateMe: (body: Partial<Pick<User, 'full_name' | 'email' | 'avatar'>>) => apiRequest<User>('/me/', { method: 'PATCH', body }),
+  /** Nouvelle photo de profil (multipart). Pour la retirer : updateMe({ avatar: null }). */
+  uploadAvatar: (form: FormData) => apiRequest<User>('/me/', { method: 'PATCH', body: form }),
   changePassword: (body: { current_password: string; new_password: string }) =>
     apiRequest<void>('/me/password/', { method: 'POST', body }),
   verifyPhone: (code: string) => apiRequest<User>('/me/verify-phone/', { method: 'POST', body: { code } }),

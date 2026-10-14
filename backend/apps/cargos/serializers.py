@@ -39,6 +39,7 @@ class CargoClientSerializer(serializers.Serializer):
     name = serializers.CharField(source="public_name")
     rating = serializers.SerializerMethodField()
     member_since = serializers.DateTimeField(source="date_joined")
+    avatar = serializers.ImageField(read_only=True)
     is_verified = serializers.SerializerMethodField()
 
     def get_is_verified(self, user) -> bool:

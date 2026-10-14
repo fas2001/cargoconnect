@@ -14,6 +14,9 @@ from . import identity as identity_services
 from .models import CIN_PATTERN, ICE_PATTERN, ClientDocument, ClientIdentity, PhoneOTP, User
 
 
+MAX_AVATAR_SIZE = 5 * 1024 * 1024
+
+
 class PhoneField(serializers.CharField):
     def to_internal_value(self, data):
         value = super().to_internal_value(data)
@@ -39,6 +42,7 @@ class MeSerializer(serializers.ModelSerializer):
     driver_profile = serializers.SerializerMethodField()
     rating_as_client = serializers.SerializerMethodField()
     identity_status = serializers.SerializerMethodField()
+    avatar = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -47,6 +51,7 @@ class MeSerializer(serializers.ModelSerializer):
             "phone",
             "full_name",
             "email",
+            "avatar",
             "phone_verified",
             "roles",
             "driver_profile",
@@ -60,6 +65,23 @@ class MeSerializer(serializers.ModelSerializer):
         if not user.is_driver:
             return None
         return DriverSummarySerializer(user.driver_profile).data
+
+    def validate_full_name(self, value):
+        value = " ".join(value.split())
+        if len(value) < 3:
+            raise serializers.ValidationError("Indiquez votre prénom et votre nom.")
+        return value
+
+    def validate_avatar(self, image):
+        if image and image.size > MAX_AVATAR_SIZE:
+            raise serializers.ValidationError("Photo trop volumineuse (5 Mo maximum).")
+        return image
+
+    def update(self, user, validated_data):
+        # Nouvelle photo (ou suppression) : l'ancien fichier est effacé.
+        if "avatar" in validated_data and user.avatar:
+            user.avatar.delete(save=False)
+        return super().update(user, validated_data)
 
     def get_identity_status(self, user) -> str | None:
         return None if user.is_driver else identity_services.status_of(user)

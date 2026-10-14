@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { OptionPicker } from '@/components/option-picker';
 import { Banner, Button, Card, EmptyState, ErrorState, Loading, Screen, SectionTitle, TextField, textStyles } from '@/components/ui';
-import { Colors, FontSize } from '@/constants/theme';
+import { Colors, Fonts, FontSize } from '@/constants/theme';
 import { useReferenceData } from '@/hooks/use-reference';
 import { ApiError, errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
@@ -106,5 +106,5 @@ export default function Vehicles() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  title: { fontSize: FontSize.body, fontWeight: '700', color: Colors.text },
+  title: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text },
 });

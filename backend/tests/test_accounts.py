@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import PhoneOTP, User
 from apps.common.validators import normalize_phone
 
-from .conftest import PASSWORD, auth
+from .conftest import PASSWORD, auth, proof_photo
 
 
 @pytest.mark.parametrize(
@@ -97,3 +97,29 @@ def test_otp_request_for_unknown_phone_does_not_leak(monkeypatch):
 def test_deactivate_account(client_user):
     assert auth(client_user).delete("/api/me/").status_code == 204
     assert not User.objects.get(pk=client_user.pk).is_active
+
+
+@pytest.mark.django_db
+def test_update_name_email_and_profile_photo(client_user):
+    api = auth(client_user)
+    response = api.patch("/api/me/", {"full_name": "  Karim   Bennani ", "email": "karim@example.ma"}, format="json")
+    assert response.status_code == 200, response.data
+    assert response.data["full_name"] == "Karim Bennani"
+    assert api.patch("/api/me/", {"full_name": "K"}, format="json").status_code == 400
+    assert api.patch("/api/me/", {"phone": "0699999999"}, format="json").data["phone"] == "+212611111111"  # non modifiable
+
+    photo = api.patch("/api/me/", {"avatar": proof_photo("moi.jpg")}, format="multipart")
+    assert photo.status_code == 200 and photo.data["avatar"].endswith(".jpg")
+    removed = api.patch("/api/me/", {"avatar": None}, format="json")
+    assert removed.data["avatar"] is None
+
+
+@pytest.mark.django_db
+def test_change_password(client_user):
+    api = auth(client_user)
+    wrong = api.post("/api/me/password/", {"current_password": "mauvais", "new_password": "Nouveau-Mot-2026"}, format="json")
+    assert wrong.status_code == 400
+    ok = api.post("/api/me/password/", {"current_password": PASSWORD, "new_password": "Nouveau-Mot-2026"}, format="json")
+    assert ok.status_code == 204
+    client_user.refresh_from_db()
+    assert client_user.check_password("Nouveau-Mot-2026")

@@ -6,7 +6,7 @@ import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Route } from '@/components/cargo-card';
 import { OfferStatusBadge } from '@/components/status-badge';
 import { Card, Chip, EmptyState, ErrorState, Loading, textStyles } from '@/components/ui';
-import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import { formatDay, formatPrice } from '@/utils/format';
@@ -81,5 +81,5 @@ const styles = StyleSheet.create({
   list: { padding: Spacing.lg, gap: Spacing.md, flexGrow: 1 },
   chips: { gap: Spacing.sm, paddingBottom: Spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
-  price: { fontSize: FontSize.body, fontWeight: '700', color: Colors.primary },
+  price: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.primary },
 });

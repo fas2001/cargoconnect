@@ -1,16 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Avatar } from '@/components/avatar';
 import { VerificationBadge } from '@/components/status-badge';
 import { LanguageSwitch } from '@/components/language-switch';
 import { Banner, Button, Card, Chevron, type IconName, Screen, TextField, textStyles } from '@/components/ui';
-import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { useAuth, useCurrentUser } from '@/features/auth/auth-context';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
+import { assetToFormData } from '@/services/upload';
 import type { IdentityStatus, Role } from '@/types/api';
 import { t } from '@/i18n';
 
@@ -30,15 +33,21 @@ export function ProfileScreen({ role }: { role: Role }) {
   return (
     <Screen refreshing={driver.isRefetching} onRefresh={role === 'driver' ? () => driver.refetch() : undefined}>
       <Card>
-        <Text style={textStyles.title}>{user.full_name}</Text>
-        <Text style={textStyles.secondary}>{user.phone}</Text>
-        {user.email ? <Text style={textStyles.secondary}>{user.email}</Text> : null}
-        <View style={styles.rating}>
-          <Ionicons name="star" size={16} color={Colors.accent} />
-          <Text style={textStyles.secondary}>
-            {rating?.average ? t('{average}/5 ({count} avis)', { average: rating.average, count: rating.count }) : t('Pas encore d’avis')}
-          </Text>
+        <View style={styles.identity}>
+          <ProfilePhoto />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={textStyles.title}>{user.full_name}</Text>
+            <Text style={textStyles.secondary}>{user.phone}</Text>
+            {user.email ? <Text style={textStyles.secondary}>{user.email}</Text> : null}
+            <View style={styles.rating}>
+              <Ionicons name="star" size={16} color={Colors.accent} />
+              <Text style={textStyles.secondary}>
+                {rating?.average ? t('{average}/5 ({count} avis)', { average: rating.average, count: rating.count }) : t('Pas encore d’avis')}
+              </Text>
+            </View>
+          </View>
         </View>
+        <Button title={t('Modifier mon compte')} variant="secondary" icon="create-outline" onPress={() => router.push('/account')} />
       </Card>
 
       {!user.phone_verified ? <PhoneVerification /> : null}
@@ -95,6 +104,67 @@ function MenuRow({ icon, label, onPress }: { icon: IconName; label: string; onPr
       <Ionicons name={icon} size={20} color={Colors.primary} />
       <Text style={styles.menuLabel}>{label}</Text>
       <Chevron size={18} color={Colors.textMuted} />
+    </Pressable>
+  );
+}
+
+/** Photo de profil : un appui propose de prendre une photo, d'en choisir une ou de la retirer. */
+function ProfilePhoto() {
+  const auth = useAuth();
+  const user = useCurrentUser();
+  const [busy, setBusy] = useState(false);
+
+  const upload = async (source: 'camera' | 'library') => {
+    if (source === 'camera' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) {
+      Alert.alert(t("L'accès à l'appareil photo a été refusé."));
+      return;
+    }
+    const options: ImagePicker.ImagePickerOptions = {
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      cameraType: ImagePicker.CameraType.front,
+    };
+    const result = source === 'camera' ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
+    if (result.canceled) return;
+    setBusy(true);
+    try {
+      await api.uploadAvatar(await assetToFormData('avatar', result.assets[0]));
+      await auth.refreshUser();
+    } catch (e) {
+      Alert.alert(t('Photo non enregistrée'), errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await api.updateMe({ avatar: null });
+      await auth.refreshUser();
+    } catch (e) {
+      Alert.alert(t('Photo non enregistrée'), errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const choose = () =>
+    Alert.alert(t('Photo de profil'), undefined, [
+      { text: t('Prendre une photo'), onPress: () => void upload('camera') },
+      { text: t('Choisir dans la galerie'), onPress: () => void upload('library') },
+      ...(user.avatar ? [{ text: t('Retirer la photo'), style: 'destructive' as const, onPress: () => void remove() }] : []),
+      { text: t('Annuler'), style: 'cancel' as const },
+    ]);
+
+  return (
+    <Pressable onPress={choose} disabled={busy} accessibilityRole="button" accessibilityLabel={t('Modifier la photo de profil')}>
+      <Avatar uri={user.avatar} name={user.full_name} size={72} />
+      <View style={styles.cameraBadge}>
+        <Ionicons name={busy ? 'hourglass-outline' : 'camera'} size={14} color={Colors.white} />
+      </View>
     </Pressable>
   );
 }
@@ -169,8 +239,22 @@ function PhoneVerification() {
 
 const styles = StyleSheet.create({
   rating: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: Colors.cta,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.surface,
+  },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
-  cardTitle: { fontSize: FontSize.body, fontWeight: '700', color: Colors.text, flexShrink: 1 },
+  cardTitle: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text, flexShrink: 1 },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm, minHeight: 44 },
-  menuLabel: { flex: 1, fontSize: FontSize.body, color: Colors.text },
+  menuLabel: { fontFamily: Fonts.regular, flex: 1, fontSize: FontSize.body, color: Colors.text },
 });

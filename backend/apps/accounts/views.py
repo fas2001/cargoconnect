@@ -60,6 +60,8 @@ class MeView(generics.RetrieveUpdateDestroyAPIView):
 
     serializer_class = MeSerializer
     http_method_names = ["get", "patch", "delete"]
+    # Multipart pour envoyer la photo de profil ; JSON pour le reste.
+    parser_classes = [parsers.JSONParser, parsers.MultiPartParser, parsers.FormParser]
 
     def get_object(self):
         return self.request.user

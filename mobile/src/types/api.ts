@@ -39,6 +39,7 @@ export type User = {
   phone: string;
   full_name: string;
   email: string;
+  avatar: string | null;
   phone_verified: boolean;
   roles: Role[];
   driver_profile: { id: string; company_name: string; verification_status: VerificationStatus } | null;
@@ -146,6 +147,7 @@ export type DriverProfile = {
 export type PublicDriver = {
   id: string;
   name: string;
+  avatar: string | null;
   company_name: string;
   bio: string;
   is_verified: boolean;
@@ -201,7 +203,7 @@ export type CargoDetail = CargoSummary & {
   origin_address?: string;
   destination_address?: string;
   photos: { id: string; image: string; created_at: string }[];
-  client: { name: string; rating: Rating; member_since: string; is_verified: boolean };
+  client: { name: string; avatar: string | null; rating: Rating; member_since: string; is_verified: boolean };
   cancel_reason: string;
   can_edit: boolean;
   my_offer: OwnOffer | null;

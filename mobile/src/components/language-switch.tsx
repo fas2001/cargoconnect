@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, Radius } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
 import { type Language, setLanguage, useLanguage } from '@/i18n';
 
 const OPTIONS: { value: Language; label: string }[] = [
@@ -40,6 +40,6 @@ const styles = StyleSheet.create({
   },
   option: { paddingHorizontal: 14, paddingVertical: 6, minHeight: 32, justifyContent: 'center' },
   selected: { backgroundColor: Colors.primary },
-  label: { fontSize: FontSize.small, color: Colors.primary, fontWeight: '600' },
+  label: { fontSize: FontSize.small, color: Colors.primary, fontFamily: Fonts.semibold },
   selectedLabel: { color: Colors.white },
 });

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
 import { t } from '@/i18n';
 
 import { Button, modalAnimation, TextField } from './ui';
@@ -48,5 +48,5 @@ export function ReasonDialog({ visible, title, label = t('Motif'), confirmLabel,
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: Spacing.lg },
   sheet: { backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.lg, gap: Spacing.md },
-  title: { fontSize: FontSize.title, fontWeight: '700', color: Colors.text },
+  title: { fontSize: FontSize.title, fontFamily: Fonts.bold, color: Colors.text },
 });

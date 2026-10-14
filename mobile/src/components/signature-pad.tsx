@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { type GestureResponderEvent, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
 import { t } from '@/i18n';
 
 import { Button } from './ui';
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     backgroundColor: Colors.surface,
   },
-  placeholder: {
+  placeholder: { fontFamily: Fonts.regular,
     position: 'absolute',
     alignSelf: 'center',
     top: 76,

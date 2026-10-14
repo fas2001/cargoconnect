@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { I18nManager, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
 import type { CargoSummary } from '@/types/api';
 import { formatDay, formatPrice, formatWeight } from '@/utils/format';
 import { localName, t, tr } from '@/i18n';
@@ -72,13 +72,13 @@ function Meta({ icon, text }: { icon: React.ComponentProps<typeof Ionicons>['nam
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', gap: Spacing.md },
   route: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexShrink: 1 },
-  city: { fontSize: FontSize.body, fontWeight: '700', color: Colors.text, flexShrink: 1 },
-  title: { fontSize: FontSize.small, color: Colors.textSecondary },
+  city: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text, flexShrink: 1 },
+  title: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.textSecondary },
   thumb: { width: 56, height: 56, borderRadius: Radius.sm, backgroundColor: Colors.background },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: FontSize.caption, color: Colors.textSecondary },
+  metaText: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textSecondary },
   bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  price: { fontSize: FontSize.body, fontWeight: '700', color: Colors.primary },
-  offers: { fontSize: FontSize.caption, color: Colors.textSecondary },
+  price: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.primary },
+  offers: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textSecondary },
 });

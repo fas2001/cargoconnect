@@ -1,6 +1,6 @@
 import { Redirect, Stack } from 'expo-router';
 
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/features/auth/auth-context';
 import { t } from '@/i18n';
 
@@ -12,7 +12,7 @@ export default function AuthLayout() {
     <Stack
       screenOptions={{
         headerTintColor: Colors.primary,
-        headerTitleStyle: { color: Colors.text },
+        headerTitleStyle: { color: Colors.text, fontFamily: Fonts.bold, fontSize: 18 },
         headerShadowVisible: false,
         headerStyle: { backgroundColor: Colors.background },
         contentStyle: { backgroundColor: Colors.background },

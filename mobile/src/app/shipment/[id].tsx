@@ -12,7 +12,7 @@ import { ReasonDialog } from '@/components/reason-dialog';
 import { SignatureView } from '@/components/signature-pad';
 import { ShipmentStatusBadge } from '@/components/status-badge';
 import { Banner, Button, Card, ErrorState, InfoRow, Loading, Screen, SectionTitle, TextField, textStyles } from '@/components/ui';
-import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { localName, t, tr } from '@/i18n';
 import { reportReasons, shipmentActionLabel, shipmentStatusLabel } from '@/i18n/labels';
 import { errorMessage } from '@/services/api';
@@ -310,8 +310,8 @@ function ReportLink({ shipment }: { shipment: Shipment }) {
 
 const styles = StyleSheet.create({
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
-  price: { fontSize: FontSize.title, fontWeight: '700', color: Colors.primary },
-  name: { fontSize: FontSize.body, fontWeight: '700', color: Colors.text },
+  price: { fontSize: FontSize.title, fontFamily: Fonts.bold, color: Colors.primary },
+  name: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text },
   progress: { flexDirection: 'row', gap: 4, marginTop: Spacing.xs },
   step: { flex: 1, height: 6, borderRadius: 3, backgroundColor: Colors.border },
   stepDone: { backgroundColor: Colors.primary },
@@ -326,15 +326,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: Colors.primarySoft,
   },
-  contactLabel: { fontSize: FontSize.body, color: Colors.primary, fontWeight: '600' },
+  contactLabel: { fontSize: FontSize.body, color: Colors.primary, fontFamily: Fonts.semibold },
   event: { flexDirection: 'row', gap: Spacing.md, paddingVertical: Spacing.xs },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.border, marginTop: 6 },
   dotActive: { backgroundColor: Colors.primary },
-  eventTitle: { fontSize: FontSize.small, fontWeight: '600', color: Colors.text },
+  eventTitle: { fontSize: FontSize.small, fontFamily: Fonts.semibold, color: Colors.text },
   stars: { flexDirection: 'row', gap: Spacing.sm },
   proof: { gap: Spacing.xs, marginTop: Spacing.xs },
   proofPhotos: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
   proofPhoto: { width: 64, height: 64, borderRadius: 8, backgroundColor: Colors.border },
   mapLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  mapText: { fontSize: FontSize.small, color: Colors.primary, fontWeight: '600' },
+  mapText: { fontSize: FontSize.small, color: Colors.primary, fontFamily: Fonts.semibold },
 });

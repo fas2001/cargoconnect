@@ -5,12 +5,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Avatar } from '@/components/avatar';
 import { Route } from '@/components/cargo-card';
 import { OptionPicker } from '@/components/option-picker';
 import { ReasonDialog } from '@/components/reason-dialog';
 import { CargoStatusBadge, OfferStatusBadge } from '@/components/status-badge';
 import { Banner, Button, Card, ErrorState, InfoRow, Loading, Screen, SectionTitle, TextField, textStyles } from '@/components/ui';
-import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/auth-context';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
@@ -213,10 +214,13 @@ function OfferCard({ offer, busy, onAccept, onReject }: { offer: ClientOffer; bu
           </View>
         ) : null}
       </View>
-      <Text style={styles.driverName}>
-        {d.name}
-        {d.company_name ? ` · ${d.company_name}` : ''}
-      </Text>
+      <View style={styles.driverRow}>
+        <Avatar uri={d.avatar} name={d.name} size={40} />
+        <Text style={[styles.driverName, { flex: 1 }]}>
+          {d.name}
+          {d.company_name ? ` · ${d.company_name}` : ''}
+        </Text>
+      </View>
       <Text style={textStyles.secondary}>
         {d.rating.average ? t('★ {average}/5 ({count} avis)', { average: d.rating.average, count: d.rating.count }) : t('Nouveau transporteur')} · {t('{count} transport(s) réalisé(s)', { count: d.completed_shipments })}
       </Text>
@@ -373,11 +377,12 @@ function PendingOffer({ cargo, offer }: { cargo: CargoDetail; offer: OwnOffer })
 
 const styles = StyleSheet.create({
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
-  price: { fontSize: FontSize.title, fontWeight: '700', color: Colors.primary },
+  price: { fontSize: FontSize.title, fontFamily: Fonts.bold, color: Colors.primary },
   photo: { width: 220, height: 150, borderRadius: Radius.md, backgroundColor: Colors.border },
-  offerPrice: { fontSize: FontSize.title, fontWeight: '800', color: Colors.text },
-  driverName: { fontSize: FontSize.body, fontWeight: '700', color: Colors.text },
+  offerPrice: { fontSize: FontSize.title, fontFamily: Fonts.bold, color: Colors.text },
+  driverName: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text },
   verified: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  verifiedText: { fontSize: FontSize.caption, color: Colors.success, fontWeight: '600' },
+  verifiedText: { fontSize: FontSize.caption, color: Colors.success, fontFamily: Fonts.semibold },
   actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
+  driverRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
 });

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Banner, Button, Screen, TextField } from '@/components/ui';
-import { Colors, FontSize } from '@/constants/theme';
+import { Colors, Fonts, FontSize } from '@/constants/theme';
 import { useAuth } from '@/features/auth/auth-context';
 import { errorMessage } from '@/services/api';
 import { t } from '@/i18n';
@@ -64,6 +64,6 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  link: { color: Colors.primary, fontWeight: '600', fontSize: FontSize.small, textAlign: 'center', paddingVertical: 8 },
-  footer: { textAlign: 'center', color: Colors.textSecondary, fontSize: FontSize.small },
+  link: { color: Colors.primary, fontFamily: Fonts.semibold, fontSize: FontSize.small, textAlign: 'center', paddingVertical: 8 },
+  footer: { fontFamily: Fonts.regular, textAlign: 'center', color: Colors.textSecondary, fontSize: FontSize.small },
 });

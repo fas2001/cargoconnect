@@ -1,21 +1,38 @@
+import { Platform } from 'react-native';
+
+/**
+ * Style « Route » : bleu nuit (marque, textes) et orange cabine de camion (actions).
+ * L'orange des boutons est assez foncé pour que le texte blanc reste lisible.
+ */
 export const Colors = {
-  primary: '#0F4C81',
-  primaryDark: '#0B3A63',
-  primarySoft: '#E7F0F8',
-  accent: '#F28C28',
-  background: '#F5F7FA',
+  primary: '#0E1B2C', // bleu nuit : marque, icônes, liens, éléments sélectionnés
+  primaryDark: '#060E18',
+  primarySoft: '#FFEBDB', // fond orangé clair : pastilles, icônes, zones d'action douces
+  cta: '#E35F00', // orange des boutons d'action principaux
+  ctaPressed: '#C45200',
+  accent: '#FF7A1A', // orange vif : flèches de trajet, étoiles, points de notification
+  header: '#0E1B2C', // en-têtes sombres (accueil)
+  background: '#EEF2F7',
   surface: '#FFFFFF',
-  border: '#DDE3EA',
-  text: '#16202A',
-  textSecondary: '#5B6875',
-  textMuted: '#8A96A3',
+  border: '#E1E7EF',
+  text: '#0E1B2C',
+  textSecondary: '#55657A',
+  textMuted: '#8A97A8',
   success: '#1E8E5A',
   successSoft: '#E3F4EC',
-  warning: '#B7791F',
-  warningSoft: '#FDF3E1',
+  warning: '#B35A00',
+  warningSoft: '#FFF1E2',
   danger: '#C53030',
   dangerSoft: '#FDE8E8',
   white: '#FFFFFF',
+} as const;
+
+/** IBM Plex Sans Arabic : une seule famille pour le français et l'arabe, une police par graisse. */
+export const Fonts = {
+  regular: 'IBMPlexSansArabic_400Regular',
+  medium: 'IBMPlexSansArabic_500Medium',
+  semibold: 'IBMPlexSansArabic_600SemiBold',
+  bold: 'IBMPlexSansArabic_700Bold',
 } as const;
 
 export const Spacing = {
@@ -28,9 +45,9 @@ export const Spacing = {
 } as const;
 
 export const Radius = {
-  sm: 6,
-  md: 10,
-  lg: 16,
+  sm: 8,
+  md: 14,
+  lg: 20,
   pill: 999,
 } as const;
 
@@ -41,3 +58,15 @@ export const FontSize = {
   title: 20,
   heading: 26,
 } as const;
+
+/** Ombre douce des cartes (les cartes n'ont plus de bordure). */
+export const Shadow = Platform.select({
+  web: { boxShadow: '0 6px 18px rgba(14, 27, 44, 0.08)' },
+  default: {
+    shadowColor: '#0E1B2C',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+}) as object;

@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
 import { t } from '@/i18n';
 
 import { modalAnimation, SelectButton } from './ui';
@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.lg,
   },
-  title: { fontSize: FontSize.title, fontWeight: '700', color: Colors.text },
-  search: {
+  title: { fontSize: FontSize.title, fontFamily: Fonts.bold, color: Colors.text },
+  search: { fontFamily: Fonts.regular,
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.sm,
     borderWidth: 1,
@@ -133,6 +133,6 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
     minHeight: 52,
   },
-  rowLabel: { fontSize: FontSize.body, color: Colors.text },
-  rowSub: { fontSize: FontSize.caption, color: Colors.textMuted, marginTop: 2 },
+  rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.text },
+  rowSub: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted, marginTop: 2 },
 });

@@ -54,6 +54,7 @@ export const ar = {
     'لا توجد عروض حاليًا. ستتوصل بإشعار بمجرد أن يقترح ناقل سعرًا.',
   Autre: 'أخرى',
   'Bonjour {name} 👋': 'مرحبًا {name} 👋',
+  "Où partent vos marchandises aujourd'hui ?": 'إلى أين تتجه بضائعك اليوم؟',
   Brouillon: 'مسودة',
   Brouillons: 'المسودات',
   Caduque: 'منتهي',
@@ -396,6 +397,19 @@ export const ar = {
   'Raison sociale': 'الاسم التجاري',
   'Registre de commerce / attestation ICE': 'السجل التجاري / شهادة ICE',
   "Votre identité est exigée avant votre première annonce. Elle reste privée : seule l'équipe CargoConnect y a accès.": 'هويتك مطلوبة قبل إعلانك الأول. تبقى خاصة: وحده فريق CargoConnect يمكنه الاطلاع عليها.',
+  // Mon compte
+  'Confirmer le nouveau mot de passe': 'تأكيد كلمة المرور الجديدة',
+  'Il sert à vous connecter et ne peut pas être modifié ici.': 'يُستعمل لتسجيل الدخول ولا يمكن تغييره هنا.',
+  'Informations enregistrées.': 'تم حفظ المعلومات.',
+  'Les deux mots de passe ne correspondent pas.': 'كلمتا المرور غير متطابقتين.',
+  'Mes informations': 'معلوماتي',
+  'Modifier la photo de profil': 'تغيير صورة الملف',
+  'Modifier mon compte': 'تعديل حسابي',
+  'Mon compte': 'حسابي',
+  'Mot de passe actuel': 'كلمة المرور الحالية',
+  'Mot de passe modifié.': 'تم تغيير كلمة المرور.',
+  'Photo de profil': 'صورة الملف',
+  'Photo non enregistrée': 'لم يتم حفظ الصورة',
 
   // --- Textes du serveur (libellés et messages de l'API) -------------------
   Plateau: 'مسطحة',
@@ -467,6 +481,7 @@ export const ar = {
   'Réservé aux comptes expéditeurs.': 'مخصص لحسابات المرسلين.',
   'Vérification de votre identité': 'التحقق من هويتك',
   'Votre identité est vérifiée : le badge « Client vérifié » apparaît sur vos annonces.': 'تم توثيق هويتك: تظهر شارة « زبون موثق » على إعلاناتك.',
+  'Indiquez votre prénom et votre nom.': 'أدخل اسمك الشخصي والعائلي.',
 };
 
 export type TKey = keyof typeof ar;

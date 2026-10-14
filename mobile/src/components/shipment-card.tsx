@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@/constants/theme';
+import { Colors, Fonts, FontSize } from '@/constants/theme';
 import type { ShipmentSummary } from '@/types/api';
 import { formatDay, formatPrice } from '@/utils/format';
 import { localName, t } from '@/i18n';
@@ -31,7 +31,7 @@ export function ShipmentCard({ shipment }: { shipment: ShipmentSummary }) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  title: { fontSize: FontSize.small, color: Colors.textSecondary },
-  meta: { fontSize: FontSize.caption, color: Colors.textSecondary },
-  price: { fontSize: FontSize.body, fontWeight: '700', color: Colors.primary },
+  title: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.textSecondary },
+  meta: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textSecondary },
+  price: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.primary },
 });

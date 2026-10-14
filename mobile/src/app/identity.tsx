@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Badge, type BadgeTone, Banner, Button, Card, Chip, ErrorState, Loading, Screen, SectionTitle, TextField, textStyles } from '@/components/ui';
-import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/auth-context';
 import { t, type TKey } from '@/i18n';
 import { ApiError, errorMessage } from '@/services/api';
@@ -173,6 +173,6 @@ const styles = StyleSheet.create({
   choices: { flexDirection: 'row', gap: Spacing.sm },
   item: { gap: Spacing.xs, paddingVertical: Spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
-  label: { flex: 1, fontSize: FontSize.body, fontWeight: '600', color: Colors.text },
-  rejected: { fontSize: FontSize.small, color: Colors.danger },
+  label: { flex: 1, fontSize: FontSize.body, fontFamily: Fonts.semibold, color: Colors.text },
+  rejected: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.danger },
 });

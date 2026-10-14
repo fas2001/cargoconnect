@@ -557,10 +557,10 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchedMeRequest'
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/PatchedMeRequest'
-          multipart/form-data:
+          application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/PatchedMeRequest'
       security:
@@ -1447,10 +1447,16 @@ components:
         member_since:
           type: string
           format: date-time
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
         is_verified:
           type: boolean
           readOnly: true
       required:
+      - avatar
       - is_verified
       - member_since
       - name
@@ -2274,6 +2280,10 @@ components:
             maxLength: 254
           - type: string
             maxLength: 0
+        avatar:
+          type: string
+          format: uri
+          nullable: true
         phone_verified:
           type: boolean
           readOnly: true
@@ -2829,6 +2839,10 @@ components:
             maxLength: 254
           - type: string
             maxLength: 0
+        avatar:
+          type: string
+          format: binary
+          nullable: true
     PatchedOfferWriteRequest:
       type: object
       properties:
@@ -2895,6 +2909,11 @@ components:
           readOnly: true
         name:
           type: string
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
         company_name:
           type: string
           title: Entreprise
@@ -2918,6 +2937,7 @@ components:
           readOnly: true
           title: Créé le
       required:
+      - avatar
       - completed_shipments
       - created_at
       - id

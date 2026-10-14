@@ -138,13 +138,14 @@ class PublicDriverSerializer(serializers.ModelSerializer):
     """Ce que voit un client qui compare les offres : pas de téléphone avant confirmation."""
 
     name = serializers.CharField(source="user.public_name")
+    avatar = serializers.ImageField(source="user.avatar", read_only=True)
     is_verified = serializers.BooleanField(read_only=True)
     rating = serializers.SerializerMethodField()
     completed_shipments = serializers.SerializerMethodField()
 
     class Meta:
         model = DriverProfile
-        fields = ["id", "name", "company_name", "bio", "is_verified", "rating", "completed_shipments", "created_at"]
+        fields = ["id", "name", "avatar", "company_name", "bio", "is_verified", "rating", "completed_shipments", "created_at"]
 
     def get_rating(self, profile):
         from apps.reviews.services import rating_summary

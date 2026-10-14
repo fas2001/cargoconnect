@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Banner, Button, Card, type IconName, Screen, TextField, textStyles } from '@/components/ui';
-import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/auth-context';
 import { ApiError, errorMessage } from '@/services/api';
 import type { Role } from '@/types/api';
@@ -150,10 +150,10 @@ function RoleOption({
 }
 
 const styles = StyleSheet.create({
-  question: { fontSize: FontSize.body, fontWeight: '700', color: Colors.text },
+  question: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text },
   roles: { flexDirection: 'row', gap: Spacing.md },
   option: { flex: 1, borderWidth: 2, borderColor: Colors.border },
   optionSelected: { borderColor: Colors.primary, backgroundColor: Colors.primarySoft },
   optionInner: { alignItems: 'center', gap: Spacing.xs },
-  optionTitle: { fontSize: FontSize.body, fontWeight: '700', color: Colors.text },
+  optionTitle: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text },
 });

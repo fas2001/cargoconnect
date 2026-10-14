@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
 import { t } from '@/i18n';
 import type { ShipmentProof } from '@/types/api';
 
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   sheet: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.lg, gap: Spacing.md },
   step: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm },
-  stepLabel: { flex: 1, fontSize: FontSize.body, fontWeight: '600', color: Colors.text },
+  stepLabel: { flex: 1, fontSize: FontSize.body, fontFamily: Fonts.semibold, color: Colors.text },
   photos: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   photo: { width: 84, height: 84, borderRadius: Radius.md, backgroundColor: Colors.border },
   addPhoto: {

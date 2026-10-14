@@ -37,6 +37,11 @@ class UserManager(BaseUserManager):
         return self.get(**{self.model.USERNAME_FIELD: username})
 
 
+def _avatar_path(instance, filename):
+    ext = os.path.splitext(filename)[1].lower() or ".jpg"
+    return f"avatars/{uuid.uuid4().hex}{ext}"
+
+
 class User(AbstractBaseUser, PermissionsMixin):
     """
     Un seul compte par personne et un seul rôle, choisi à l'inscription : client (publie des
@@ -47,6 +52,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField("téléphone", max_length=16, unique=True)
     full_name = models.CharField("nom complet", max_length=150)
     email = models.EmailField("e-mail", blank=True)
+    # Photo de profil : visible des autres utilisateurs (offres, annonces), contrairement aux justificatifs.
+    avatar = models.ImageField("photo de profil", upload_to=_avatar_path, null=True, blank=True)
     phone_verified = models.BooleanField("téléphone vérifié", default=False)
     is_active = models.BooleanField("actif", default=True)
     is_staff = models.BooleanField("équipe", default=False)

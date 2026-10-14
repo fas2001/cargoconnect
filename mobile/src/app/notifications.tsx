@@ -3,7 +3,7 @@ import { router, Stack } from 'expo-router';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, EmptyState, ErrorState, Loading, textStyles } from '@/components/ui';
-import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import type { AppNotification } from '@/types/api';
@@ -77,5 +77,5 @@ const styles = StyleSheet.create({
   unread: { borderColor: Colors.primary, borderWidth: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primary },
-  title: { flex: 1, fontSize: FontSize.body, fontWeight: '700', color: Colors.text },
+  title: { flex: 1, fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text },
 });

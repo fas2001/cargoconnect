@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, I18nManager, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { t } from '@/i18n';
 
 const SIZES = {
@@ -55,7 +55,7 @@ export function TruckLoader({ size = 'large', label }: { size?: keyof typeof SIZ
     <View style={styles.wrap} accessibilityRole="progressbar" accessibilityLabel={caption ?? t('Un instant…')}>
       <View style={[{ width: s.width }, I18nManager.isRTL && styles.mirror]}>
         <Animated.View style={[styles.truck, { transform: [{ translateY: truckLift }] }]}>
-          <MaterialCommunityIcons name="truck-fast" size={s.truck} color={Colors.primary} />
+          <MaterialCommunityIcons name="truck-fast" size={s.truck} color={Colors.accent} />
         </Animated.View>
         <View style={[styles.road, { height: s.road, borderRadius: s.road / 2 }]}>
           <Animated.View style={[styles.lane, { transform: [{ translateX: roadShift }] }]}>
@@ -68,7 +68,7 @@ export function TruckLoader({ size = 'large', label }: { size?: keyof typeof SIZ
           </Animated.View>
         </View>
       </View>
-      {caption ? <Text style={[styles.caption, size === 'small' && { fontSize: FontSize.caption }]}>{caption}</Text> : null}
+      {caption ? <Text style={[styles.caption, size === 'small' && { fontFamily: Fonts.regular, fontSize: FontSize.caption }]}>{caption}</Text> : null}
     </View>
   );
 }
@@ -79,5 +79,5 @@ const styles = StyleSheet.create({
   truck: { alignSelf: 'center', marginBottom: -2 },
   road: { backgroundColor: Colors.text, overflow: 'hidden', justifyContent: 'center' },
   lane: { flexDirection: 'row', alignItems: 'center' },
-  caption: { fontSize: FontSize.small, color: Colors.textSecondary },
+  caption: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.textSecondary },
 });

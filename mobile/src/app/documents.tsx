@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DateField } from '@/components/date-field';
 import { OptionPicker } from '@/components/option-picker';
 import { Badge, type BadgeTone, Banner, Button, Card, Chip, ErrorState, Loading, modalAnimation, Screen, SectionTitle, TextField, textStyles } from '@/components/ui';
-import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
 import { t, type TKey } from '@/i18n';
 import { documentTypeLabel } from '@/i18n/labels';
 import { errorMessage } from '@/services/api';
@@ -283,11 +283,11 @@ function UploadForm({ target, vehicles, onClose }: { target: Target; vehicles: V
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
   item: { gap: Spacing.xs, paddingVertical: Spacing.xs },
-  label: { flex: 1, fontSize: FontSize.body, fontWeight: '600', color: Colors.text },
-  rejected: { fontSize: FontSize.small, color: Colors.danger },
+  label: { flex: 1, fontSize: FontSize.body, fontFamily: Fonts.semibold, color: Colors.text },
+  rejected: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.danger },
   sheet: { flex: 1, backgroundColor: Colors.background },
   sheetContent: { padding: Spacing.lg, gap: Spacing.md },
   preview: { width: '100%', height: 220, borderRadius: Radius.md, backgroundColor: Colors.border },
-  question: { fontSize: FontSize.body, color: Colors.text },
+  question: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.text },
   choices: { flexDirection: 'row', gap: Spacing.sm },
 });

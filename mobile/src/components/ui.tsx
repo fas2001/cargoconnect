@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
 import { t } from '@/i18n';
 
 import { TruckLoader } from './truck-loader';
@@ -40,16 +40,25 @@ type ScreenProps = {
   onRefresh?: () => void;
   edges?: ('top' | 'bottom')[];
   footer?: ReactNode;
+  /** Bandeau bord à bord affiché au-dessus du contenu (sans marge latérale). */
+  hero?: ReactNode;
 };
 
 /** Conteneur d'écran : zone sûre, clavier, défilement et « tirer pour rafraîchir ». */
-export function Screen({ children, scroll = true, refreshing, onRefresh, edges = [], footer }: ScreenProps) {
+export function Screen({ children, scroll = true, refreshing, onRefresh, edges = [], footer, hero }: ScreenProps) {
   const content = scroll ? (
     <ScrollView
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={hero ? styles.flexGrow : styles.scrollContent}
       keyboardShouldPersistTaps="handled"
       refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} /> : undefined}>
-      {children}
+      {hero ? (
+        <>
+          {hero}
+          <View style={styles.scrollContent}>{children}</View>
+        </>
+      ) : (
+        children
+      )}
     </ScrollView>
   ) : (
     <View style={[styles.scrollContent, styles.flex]}>{children}</View>
@@ -103,8 +112,8 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
 }
 
 const BUTTON_PALETTE = {
-  primary: { bg: Colors.primary, fg: Colors.white, border: Colors.primary },
-  secondary: { bg: Colors.surface, fg: Colors.primary, border: Colors.primary },
+  primary: { bg: Colors.cta, fg: Colors.white, border: Colors.cta },
+  secondary: { bg: Colors.surface, fg: Colors.primary, border: Colors.border },
   danger: { bg: Colors.surface, fg: Colors.danger, border: Colors.danger },
   ghost: { bg: 'transparent', fg: Colors.primary, border: 'transparent' },
 };
@@ -263,17 +272,18 @@ export function Banner({ tone = 'info', message, icon = 'information-circle-outl
 }
 
 export const textStyles = StyleSheet.create({
-  heading: { fontSize: FontSize.heading, fontWeight: '700', color: Colors.text },
-  title: { fontSize: FontSize.title, fontWeight: '700', color: Colors.text },
-  body: { fontSize: FontSize.body, color: Colors.text, lineHeight: 22 },
-  secondary: { fontSize: FontSize.small, color: Colors.textSecondary, lineHeight: 20 },
-  caption: { fontSize: FontSize.caption, color: Colors.textMuted },
+  heading: { fontSize: FontSize.heading, fontFamily: Fonts.bold, color: Colors.text },
+  title: { fontSize: FontSize.title, fontFamily: Fonts.bold, color: Colors.text },
+  body: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.text, lineHeight: 22 },
+  secondary: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.textSecondary, lineHeight: 20 },
+  caption: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted },
 });
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: Colors.background },
   scrollContent: { padding: Spacing.lg, gap: Spacing.md, flexGrow: 1 },
+  flexGrow: { flexGrow: 1 },
   footer: {
     padding: Spacing.lg,
     gap: Spacing.sm,
@@ -282,7 +292,7 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
   },
   button: {
-    minHeight: 50,
+    minHeight: 52,
     borderRadius: Radius.md,
     borderWidth: 1.5,
     paddingHorizontal: Spacing.lg,
@@ -291,12 +301,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.sm,
   },
-  buttonText: { fontSize: FontSize.body, fontWeight: '600' },
+  buttonText: { fontSize: FontSize.body, fontFamily: Fonts.bold },
   field: { gap: Spacing.xs },
-  label: { fontSize: FontSize.small, fontWeight: '600', color: Colors.text },
+  label: { fontSize: FontSize.small, fontFamily: Fonts.semibold, color: Colors.text },
   input: {
-    minHeight: 50,
-    borderWidth: 1,
+    fontFamily: Fonts.regular,
+    minHeight: 52,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     borderRadius: Radius.md,
     backgroundColor: Colors.surface,
@@ -306,21 +317,21 @@ const styles = StyleSheet.create({
   },
   multiline: { minHeight: 96, paddingTop: Spacing.md, textAlignVertical: 'top' },
   inputError: { borderColor: Colors.danger },
-  error: { fontSize: FontSize.caption, color: Colors.danger },
-  hint: { fontSize: FontSize.caption, color: Colors.textMuted },
+  error: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.danger },
+  hint: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted },
   selectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
-  selectValue: { flex: 1, fontSize: FontSize.body, color: Colors.text },
-  selectPlaceholder: { flex: 1, fontSize: FontSize.body, color: Colors.textMuted },
+  selectValue: { fontFamily: Fonts.regular, flex: 1, fontSize: FontSize.body, color: Colors.text },
+  selectPlaceholder: { fontFamily: Fonts.regular, flex: 1, fontSize: FontSize.body, color: Colors.textMuted },
+  // Cartes du style « Route » : très arrondies, sans bordure, ombre douce.
   card: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
     gap: Spacing.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
+    ...Shadow,
   },
   badge: { alignSelf: 'flex-start', borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
-  badgeText: { fontSize: FontSize.caption, fontWeight: '600' },
+  badgeText: { fontSize: FontSize.caption, fontFamily: Fonts.semibold },
   chip: {
     borderRadius: Radius.pill,
     borderWidth: 1,
@@ -330,17 +341,17 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   chipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: FontSize.small, color: Colors.text },
-  chipTextSelected: { color: Colors.white, fontWeight: '600' },
+  chipText: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.text },
+  chipTextSelected: { color: Colors.white, fontFamily: Fonts.semibold },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.sm },
-  sectionTitle: { fontSize: FontSize.body, fontWeight: '700', color: Colors.text },
+  sectionTitle: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  infoLabel: { fontSize: FontSize.small, color: Colors.textSecondary, width: 110 },
-  infoValue: { flex: 1, fontSize: FontSize.small, color: Colors.text, fontWeight: '500' },
+  infoLabel: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.textSecondary, width: 110 },
+  infoValue: { flex: 1, fontSize: FontSize.small, color: Colors.text, fontFamily: Fonts.medium },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
   empty: { alignItems: 'center', justifyContent: 'center', padding: Spacing.xl, gap: Spacing.sm, flexGrow: 1 },
-  emptyTitle: { fontSize: FontSize.body, fontWeight: '700', color: Colors.text, textAlign: 'center' },
-  emptyMessage: { fontSize: FontSize.small, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.sm },
+  emptyTitle: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text, textAlign: 'center' },
+  emptyMessage: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.sm },
   banner: { flexDirection: 'row', gap: Spacing.sm, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'flex-start' },
-  bannerText: { flex: 1, fontSize: FontSize.small, lineHeight: 20 },
+  bannerText: { fontFamily: Fonts.regular, flex: 1, fontSize: FontSize.small, lineHeight: 20 },
 });

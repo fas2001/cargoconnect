@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LanguageSwitch } from '@/components/language-switch';
 import { Button } from '@/components/ui';
-import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { t, type TKey } from '@/i18n';
 
 const POINTS = [
@@ -57,10 +57,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brand: { fontSize: 32, fontWeight: '800', color: Colors.primary },
-  tagline: { fontSize: FontSize.body, color: Colors.textSecondary, textAlign: 'center' },
+  brand: { fontSize: 32, fontFamily: Fonts.bold, color: Colors.primary },
+  tagline: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textSecondary, textAlign: 'center' },
   points: { gap: Spacing.lg },
   point: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  pointText: { flex: 1, fontSize: FontSize.body, color: Colors.text },
+  pointText: { fontFamily: Fonts.regular, flex: 1, fontSize: FontSize.body, color: Colors.text },
   actions: { gap: Spacing.md },
 });

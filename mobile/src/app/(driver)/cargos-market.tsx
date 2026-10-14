@@ -7,7 +7,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CargoCard } from '@/components/cargo-card';
 import { OptionPicker } from '@/components/option-picker';
 import { Button, Card, EmptyState, ErrorState, Loading } from '@/components/ui';
-import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { useReferenceData } from '@/hooks/use-reference';
 import { errorMessage } from '@/services/api';
 import { api, type CargoFilters } from '@/services/endpoints';
@@ -83,6 +83,6 @@ export default function CargosMarket() {
 const styles = StyleSheet.create({
   list: { padding: Spacing.lg, gap: Spacing.md, flexGrow: 1 },
   filterToggle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs },
-  filterText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.primary },
-  count: { flex: 1, textAlign: 'right', fontSize: FontSize.small, color: Colors.textSecondary },
+  filterText: { fontSize: FontSize.body, fontFamily: Fonts.semibold, color: Colors.primary },
+  count: { fontFamily: Fonts.regular, flex: 1, textAlign: 'right', fontSize: FontSize.small, color: Colors.textSecondary },
 });

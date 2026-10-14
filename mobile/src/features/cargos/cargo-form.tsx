@@ -7,7 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { DateField } from '@/components/date-field';
 import { OptionPicker } from '@/components/option-picker';
 import { Banner, Button, ErrorState, Loading, SectionTitle, TextField } from '@/components/ui';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useReferenceData } from '@/hooks/use-reference';
 import { ApiError, errorMessage } from '@/services/api';
 import type { CargoInput, TruckType } from '@/types/api';
@@ -290,8 +290,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 2,
   },
-  notice: { fontSize: 12, color: Colors.textSecondary },
+  notice: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textSecondary },
   declaration: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' },
-  declarationText: { flex: 1, fontSize: 14, color: Colors.text },
-  error: { fontSize: 12, color: Colors.danger },
+  declarationText: { fontFamily: Fonts.regular, flex: 1, fontSize: 14, color: Colors.text },
+  error: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.danger },
 });

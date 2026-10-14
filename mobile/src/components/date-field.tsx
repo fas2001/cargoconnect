@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
 import { isArabic, t } from '@/i18n';
 import { formatDay, toIsoDay } from '@/utils/format';
 
@@ -147,14 +147,14 @@ const styles = StyleSheet.create({
   },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   nav: { padding: Spacing.xs },
-  monthTitle: { fontSize: FontSize.title, fontWeight: '700', color: Colors.text },
+  monthTitle: { fontSize: FontSize.title, fontFamily: Fonts.bold, color: Colors.text },
   row: { flexDirection: 'row' },
   cell: { flex: 1, alignItems: 'center', justifyContent: 'center', height: 42 },
-  weekday: { fontSize: FontSize.caption, fontWeight: '600', color: Colors.textMuted, textAlign: 'center', textAlignVertical: 'center' },
+  weekday: { fontSize: FontSize.caption, fontFamily: Fonts.semibold, color: Colors.textMuted, textAlign: 'center', textAlignVertical: 'center' },
   day: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   daySelected: { backgroundColor: Colors.primary },
   dayToday: { borderWidth: 1.5, borderColor: Colors.accent },
-  dayText: { fontSize: FontSize.body, color: Colors.text },
-  dayTextSelected: { color: Colors.white, fontWeight: '700' },
+  dayText: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.text },
+  dayTextSelected: { color: Colors.white, fontFamily: Fonts.bold },
   dayDisabled: { color: Colors.border },
 });
