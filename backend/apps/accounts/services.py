@@ -39,8 +39,15 @@ def request_otp(*, phone: str, purpose: str) -> None:
         raise OTPUnavailable() from exc
 
 
-@transaction.atomic
 def consume_otp(*, phone: str, purpose: str, code: str) -> None:
+    # L'erreur est levée après la transaction : un essai raté doit rester compté (sinon la limite
+    # de 5 essais serait annulée par le rollback et le code pourrait être deviné).
+    if not _try_otp(phone=phone, purpose=purpose, code=code):
+        raise BusinessRuleError("Code incorrect.", code="otp_invalid")
+
+
+@transaction.atomic
+def _try_otp(*, phone: str, purpose: str, code: str) -> bool:
     otp = (
         PhoneOTP.objects.select_for_update()
         .filter(phone=phone, purpose=purpose, used_at__isnull=True, expires_at__gt=timezone.now())
@@ -52,9 +59,10 @@ def consume_otp(*, phone: str, purpose: str, code: str) -> None:
     if not otp.check_code(code):
         otp.attempts += 1
         otp.save(update_fields=["attempts"])
-        raise BusinessRuleError("Code incorrect.", code="otp_invalid")
+        return False
     otp.used_at = timezone.now()
     otp.save(update_fields=["used_at"])
+    return True
 
 
 def revoke_all_sessions(user: User) -> None:

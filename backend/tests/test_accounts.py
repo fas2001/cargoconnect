@@ -1,7 +1,9 @@
 import pytest
 from rest_framework.test import APIClient
 
+from apps.accounts import services
 from apps.accounts.models import PhoneOTP, User
+from apps.common.exceptions import BusinessRuleError
 from apps.common.validators import normalize_phone
 
 from .conftest import PASSWORD, auth, proof_photo
@@ -141,3 +143,24 @@ def test_password_change_logs_out_other_devices(client_user):
     assert anon.post("/api/auth/refresh/", {"refresh": phone_a["refresh"]}).status_code == 401
     # Le téléphone qui a changé le mot de passe reste connecté avec ses nouveaux jetons.
     assert anon.post("/api/auth/refresh/", {"refresh": changed.data["refresh"]}).status_code == 200
+
+
+@pytest.mark.django_db
+def test_wrong_codes_are_counted_so_a_reset_code_cannot_be_guessed(client_user, monkeypatch):
+    monkeypatch.setattr("apps.accounts.services.deliver_code", lambda phone, code: None)
+    monkeypatch.setattr("apps.accounts.services.secrets.randbelow", lambda n: 123456)
+    api = APIClient()
+    api.post("/api/auth/otp/request/", {"phone": "0611111111", "purpose": "reset_password"})
+
+    # Directement par le service : la limite de requêtes par adresse IP ne protège pas d'un attaquant
+    # qui change d'adresse ; c'est le compteur d'essais du code qui doit tenir.
+    for guess in ("000001", "000002", "000003", "000004", "000005"):
+        with pytest.raises(BusinessRuleError):
+            services.consume_otp(phone="+212611111111", purpose="reset_password", code=guess)
+    assert PhoneOTP.objects.get().attempts == 5
+
+    # Après 5 essais ratés, même le bon code est refusé.
+    ok = api.post("/api/auth/password-reset/", {"phone": "0611111111", "code": "123456", "new_password": "Nouveau-Pass-99"})
+    assert ok.status_code == 409
+    client_user.refresh_from_db()
+    assert client_user.check_password(PASSWORD)
