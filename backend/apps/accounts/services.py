@@ -2,7 +2,7 @@ import secrets
 from datetime import timedelta
 
 from django.conf import settings
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 from rest_framework.exceptions import APIException
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
@@ -63,6 +63,36 @@ def _try_otp(*, phone: str, purpose: str, code: str) -> bool:
     otp.used_at = timezone.now()
     otp.save(update_fields=["used_at"])
     return True
+
+
+@transaction.atomic
+def deactivate_user(user: User, *, reason: str) -> int:
+    """
+    Suspension par l'équipe ou désactivation par l'utilisateur. Le compte ne doit plus rien laisser d'actif
+    sur la place de marché : ses propositions en attente sont retirées, ses annonces ouvertes annulées
+    (les chauffeurs concernés sont prévenus) et tous ses appareils sont déconnectés.
+    Renvoie le nombre de transports en cours, que l'équipe doit suivre elle-même.
+    """
+    from apps.cargos.models import CargoStatus
+    from apps.cargos.services import cancel_cargo
+    from apps.offers.models import OfferStatus
+    from apps.shipments.models import Shipment, ShipmentStatus
+
+    user.is_active = False
+    user.save(update_fields=["is_active"])
+    if user.is_driver:
+        user.driver_profile.offers.filter(status=OfferStatus.PENDING).update(
+            status=OfferStatus.WITHDRAWN, updated_at=timezone.now()
+        )
+    for cargo in user.cargos.filter(status__in=[CargoStatus.DRAFT, CargoStatus.PUBLISHED]):
+        cancel_cargo(cargo, reason=reason)
+    revoke_all_sessions(user)
+    open_statuses = [ShipmentStatus.CONFIRMED, ShipmentStatus.LOADED, ShipmentStatus.IN_TRANSIT, ShipmentStatus.DELIVERED, ShipmentStatus.DISPUTED]
+    return (
+        Shipment.objects.filter(status__in=open_statuses)
+        .filter(models.Q(client=user) | models.Q(driver__user=user))
+        .count()
+    )
 
 
 def revoke_all_sessions(user: User) -> None:

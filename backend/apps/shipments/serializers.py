@@ -57,6 +57,8 @@ class ShipmentEventCreateSerializer(serializers.Serializer):
     receiver_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     signature = serializers.CharField(required=False, allow_blank=True, max_length=50_000)
     photos = serializers.ListField(child=serializers.ImageField(), required=False, max_length=services.MAX_PROOF_PHOTOS)
+    # Code du destinataire, facultatif : sans lui, le client doit confirmer la livraison lui-même.
+    delivery_code = serializers.RegexField(r"^\d{6}$", required=False, allow_blank=True, default="")
 
     def validate_signature(self, value):
         if not SIGNATURE_PATTERN.match(value):
@@ -93,6 +95,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
     my_role = serializers.SerializerMethodField()
     allowed_transitions = serializers.SerializerMethodField()
     can_review = serializers.SerializerMethodField()
+    delivery_code = serializers.SerializerMethodField()
 
     class Meta:
         model = Shipment
@@ -114,10 +117,19 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "my_role",
             "allowed_transitions",
             "can_review",
+            "delivery_code",
+            "delivered_with_code",
         ]
 
     def _role(self, shipment):
         return services.role_of(self.context["request"].user, shipment)
+
+    def get_delivery_code(self, shipment) -> str | None:
+        """Jamais montré au chauffeur : il doit l'obtenir du destinataire, sur place."""
+        open_steps = (ShipmentStatus.CONFIRMED, ShipmentStatus.LOADED, ShipmentStatus.IN_TRANSIT)
+        if self._role(shipment) != services.CLIENT or shipment.status not in open_steps:
+            return None
+        return shipment.delivery_code or None
 
     def get_cargo(self, shipment):
         from apps.cargos.serializers import CargoDetailSerializer

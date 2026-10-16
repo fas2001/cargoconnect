@@ -9,6 +9,7 @@ from apps.cargos.models import Cargo, CargoStatus
 from apps.drivers.models import DriverDocument, DriverProfile, VerificationStatus
 from apps.reports.models import Report
 from apps.shipments.models import Shipment, ShipmentStatus
+from apps.shipments.services import needing_attention
 
 ACTIVE_SHIPMENTS = [ShipmentStatus.CONFIRMED, ShipmentStatus.LOADED, ShipmentStatus.IN_TRANSIT, ShipmentStatus.DELIVERED]
 
@@ -24,6 +25,8 @@ def dashboard() -> dict:
         + ClientDocument.objects.filter(status=pending, replaced_at__isnull=True).count(),
         "reports_open": Report.objects.filter(status__in=[Report.Status.OPEN, Report.Status.IN_REVIEW]).count(),
         "shipments_disputed": Shipment.objects.filter(status=ShipmentStatus.DISPUTED).count(),
+        # Litiges compris, plus les transports bloqués (voir `needing_attention`).
+        "shipments_attention": needing_attention().count(),
         # Activité
         "users_total": users.count(),
         "drivers_total": users.filter(driver_profile__isnull=False).count(),

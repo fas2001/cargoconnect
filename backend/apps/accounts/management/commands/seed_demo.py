@@ -1,19 +1,29 @@
+import io
 from datetime import timedelta
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
+from PIL import Image
 
 from apps.accounts.models import User
 from apps.cargos.models import Cargo, City, GoodsCategory
 from apps.cargos.services import publish_cargo
-from apps.drivers.models import DriverProfile, VerificationStatus
+from apps.drivers.models import DriverDocument, DriverProfile, VerificationStatus
+from apps.drivers.services import REQUIRED_PER_VEHICLE, REQUIRED_PERSONAL
 from apps.vehicles.models import TruckType, Vehicle
 
 DEMO_PASSWORD = "demo-cargo-2026"
 CLIENT_PHONE = "0600000001"
 DRIVER_PHONE = "0600000002"
+
+
+def _demo_image() -> bytes:
+    buffer = io.BytesIO()
+    Image.new("RGB", (64, 40), "lightgray").save(buffer, "JPEG")
+    return buffer.getvalue()
 
 
 class Command(BaseCommand):
@@ -39,10 +49,25 @@ class Command(BaseCommand):
                 "verified_at": timezone.now(),
             },
         )
-        Vehicle.objects.get_or_create(
+        truck, _ = Vehicle.objects.get_or_create(
             registration_number="12345-A-6",
             defaults={"driver": profile, "truck_type": TruckType.PLATEAU, "capacity_kg": 25000, "brand_model": "Volvo FH"},
         )
+        # Justificatifs validés : sans eux, un chauffeur vérifié ne peut pas proposer de tarif.
+        expires = timezone.localdate() + timedelta(days=365)
+        required = [(doc_type, side, None) for doc_type, side in REQUIRED_PERSONAL]
+        required += [(doc_type, side, truck) for doc_type, side in REQUIRED_PER_VEHICLE]
+        for doc_type, side, vehicle in required:
+            if not DriverDocument.objects.filter(driver=profile, doc_type=doc_type, side=side, vehicle=vehicle).exists():
+                DriverDocument.objects.create(
+                    driver=profile,
+                    doc_type=doc_type,
+                    side=side,
+                    vehicle=vehicle,
+                    file=ContentFile(_demo_image(), name="demo.jpg"),
+                    status=VerificationStatus.VERIFIED,
+                    expires_on=expires,
+                )
 
         city = {c.slug: c for c in City.objects.all()}
         cat = {c.slug: c for c in GoodsCategory.objects.all()}

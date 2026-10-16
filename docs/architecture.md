@@ -40,10 +40,25 @@ Le statut « En négociation » du cahier des charges est remplacé par « publi
 | confirmed | cancelled | les deux (motif obligatoire) |
 | loaded | in_transit | chauffeur |
 | in_transit | delivered | chauffeur |
-| delivered | completed | client (ou automatique après 48 h) |
+| delivered | completed | client (ou automatique après 48 h, seulement si le code de livraison a été saisi) |
 | loaded / in_transit / delivered | disputed | les deux (motif obligatoire) |
+| tout statut ouvert (y compris disputed) | completed · cancelled | équipe (`resolve_by_staff`, motif obligatoire) |
 
 Chaque changement crée un `ShipmentEvent`, qui forme un historique immuable.
+
+### Code de livraison
+
+À l'acceptation, le transport reçoit un code à 6 chiffres que seul le client voit (il peut l'envoyer au
+destinataire par WhatsApp depuis l'application). Le chauffeur le demande au destinataire et le saisit à la
+livraison : 5 essais au plus, comptés même si la déclaration est refusée. Avec le bon code, la livraison
+est confirmée automatiquement après 48 h sans réponse du client. Sans code, le client doit confirmer
+lui-même ; s'il ne le fait pas, le transport apparaît dans « À traiter » pour l'équipe.
+
+### Transports à traiter (`needing_attention`)
+
+Litiges, transports encore « confirmés » le lendemain de la date de chargement, trajets de plus de
+`SHIPMENT_STALE_TRANSIT_DAYS` jours (4 par défaut), et livraisons sans code non confirmées après 48 h.
+Ils sont comptés dans le tableau de bord et filtrés par `GET /api/backoffice/shipments/?status=attention`.
 
 ## Garantie « une cargaison = un seul chauffeur »
 
@@ -55,6 +70,10 @@ Chaque changement crée un `ShipmentEvent`, qui forme un historique immuable.
 3. `Shipment.cargo` et `Shipment.offer` en relation un-à-un (`OneToOne`).
 
 Si deux acceptations arrivent en même temps, la seconde reçoit `409 cargo_already_assigned`.
+
+L'acceptation envoie aussi le tarif affiché au client (`{"price": ...}`) : si le chauffeur l'a modifié
+entre-temps, elle est refusée (`409 offer_changed`). Elle revérifie enfin le chauffeur (compte actif,
+profil vérifié, justificatifs et camion valides), sinon `409 driver_unavailable`.
 
 ## Confidentialité
 
@@ -72,8 +91,17 @@ Si deux acceptations arrivent en même temps, la seconde reçoit `409 cargo_alre
 
 - Une annonce publiée ne peut plus être modifiée dès qu'elle a reçu une offre en attente.
 - Un chauffeur doit être **vérifié** par l'administration pour proposer un tarif
-  (`REQUIRE_VERIFIED_DRIVER_TO_OFFER`).
+  (`REQUIRE_VERIFIED_DRIVER_TO_OFFER`). Le profil ne peut être vérifié qu'une fois chaque justificatif
+  exigé validé. Remplacer un justificatif personnel (CIN, permis, selfie) renvoie un profil vérifié en
+  vérification, et un justificatif personnel refusé ou expiré bloque les propositions.
+- Chaque offre indique un camion : du type demandé dans l'annonce, d'une capacité suffisante pour le poids,
+  et dont la carte grise et l'assurance sont vérifiées et à jour. Un camion ajouté après la vérification
+  du profil reste donc inutilisable tant que ses justificatifs n'ont pas été contrôlés.
+- Ces contrôles sont refaits à l'envoi, à la modification et à l'acceptation d'une offre.
 - Il ne peut pas proposer de tarif sur sa propre annonce, et n'a qu'une offre en attente par annonce.
+- Suspendre un compte (ou le fermer soi-même) retire ses offres en attente, annule ses annonces ouvertes
+  (les chauffeurs concernés sont prévenus) et déconnecte tous ses appareils. Ses transports en cours
+  restent à suivre par l'équipe : leur nombre est renvoyé (`open_shipments`).
 - Une annonce expire le lendemain de la date de chargement (`periodic_tasks`).
 - Les avis ne sont possibles qu'après livraison confirmée, à raison d'un avis par partie.
 

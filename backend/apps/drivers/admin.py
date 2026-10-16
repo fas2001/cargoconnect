@@ -2,6 +2,7 @@ from django.contrib import admin, messages
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
 
+from apps.common.exceptions import BusinessRuleError
 from apps.vehicles.models import Vehicle
 
 from . import services
@@ -97,9 +98,21 @@ class DriverProfileAdmin(admin.ModelAdmin):
 
     @admin.action(description="Marquer comme vérifié")
     def mark_verified(self, request, queryset):
+        verified, incomplete = 0, []
         for profile in queryset:
-            services.decide_profile(profile, VerificationStatus.VERIFIED, by=request.user)
-        self.message_user(request, f"{queryset.count()} chauffeur(s) vérifié(s) et notifié(s).", messages.SUCCESS)
+            try:
+                services.decide_profile(profile, VerificationStatus.VERIFIED, by=request.user)
+                verified += 1
+            except BusinessRuleError:
+                incomplete.append(str(profile))
+        if verified:
+            self.message_user(request, f"{verified} chauffeur(s) vérifié(s) et notifié(s).", messages.SUCCESS)
+        if incomplete:
+            self.message_user(
+                request,
+                f"Non vérifié(s), justificatifs à contrôler d'abord : {', '.join(incomplete)}.",
+                messages.ERROR,
+            )
 
     @admin.action(description="Refuser la vérification (motif : champ « motif du refus »)")
     def mark_rejected(self, request, queryset):

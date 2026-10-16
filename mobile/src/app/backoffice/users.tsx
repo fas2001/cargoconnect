@@ -33,6 +33,7 @@ function UserCard({ user }: { user: AdminUser }) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const open = () => {
     if (user.driver_id) router.push({ pathname: '/backoffice/driver/[id]', params: { id: user.driver_id } });
@@ -43,14 +44,22 @@ function UserCard({ user }: { user: AdminUser }) {
     const suspend = user.is_active;
     const ok = await confirmAction(
       suspend ? 'Suspendre ce compte ?' : 'Réactiver ce compte ?',
-      suspend ? "L'utilisateur ne pourra plus se connecter." : "L'utilisateur pourra de nouveau se connecter.",
+      suspend
+        ? "L'utilisateur sera déconnecté de ses appareils. Ses propositions en attente seront retirées et ses annonces ouvertes annulées."
+        : "L'utilisateur pourra de nouveau se connecter. Ses annonces annulées ne sont pas remises en ligne.",
       suspend ? 'Suspendre' : 'Réactiver',
     );
     if (!ok) return;
     setBusy(true);
     setError(null);
     try {
-      await adminApi.setUserActive(user.id, !suspend);
+      const result = await adminApi.setUserActive(user.id, !suspend);
+      if (result.open_shipments > 0) {
+        // Ses offres et annonces ont été retirées, mais ses transports en cours restent à suivre.
+        setNotice(
+          `${result.open_shipments} transport(s) en cours : prévenez l'autre partie et clôturez-les depuis « Transports ».`,
+        );
+      }
       await queryClient.invalidateQueries({ queryKey: ['backoffice'] });
     } catch (e) {
       setError(errorMessage(e));
@@ -76,6 +85,7 @@ function UserCard({ user }: { user: AdminUser }) {
         {!user.is_active ? <Badge label="Suspendu" tone="danger" /> : null}
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {notice ? <Text style={styles.notice}>{notice}</Text> : null}
       {user.role !== 'staff' ? (
         <Button
           title={user.is_active ? 'Suspendre le compte' : 'Réactiver le compte'}
@@ -92,4 +102,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   name: { fontFamily: Fonts.bold, fontSize: FontSize.body, color: Colors.text },
   error: { fontFamily: Fonts.regular, fontSize: FontSize.small, color: Colors.danger },
+  notice: { fontFamily: Fonts.semibold, fontSize: FontSize.small, color: Colors.warning },
 });

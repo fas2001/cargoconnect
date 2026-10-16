@@ -278,6 +278,8 @@ export type ShipmentProof = {
   accuracy: number | null;
   receiver_name?: string;
   signature?: string;
+  /** Code donné par le destinataire à la livraison (facultatif). */
+  delivery_code?: string;
 };
 
 export type ShipmentSummary = {
@@ -302,6 +304,10 @@ export type Shipment = Omit<ShipmentSummary, 'cargo'> & {
   events: ShipmentEvent[];
   allowed_transitions: { status: ShipmentStatus; label: string; note_required: boolean }[];
   can_review: boolean;
+  /** Visible du client seulement, jusqu'à la livraison : il le transmet au destinataire. */
+  delivery_code: string | null;
+  /** Le chauffeur a saisi le bon code à la livraison. */
+  delivered_with_code: boolean;
 };
 
 export type AppNotification = {

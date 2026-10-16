@@ -73,8 +73,7 @@ class MeView(generics.RetrieveUpdateDestroyAPIView):
             raise BusinessRuleError(
                 "Impossible de désactiver le compte tant qu'un transport est en cours.", code="active_shipments"
             )
-        user.is_active = False
-        user.save(update_fields=["is_active"])
+        services.deactivate_user(user, reason="Compte fermé par son titulaire.")
 
 
 class ChangePasswordView(APIView):

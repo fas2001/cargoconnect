@@ -578,6 +578,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/AdminShipmentDetail'
           description: ''
+  /api/backoffice/shipments/{id}/resolve/:
+    post:
+      operationId: backoffice_shipments_resolve_create
+      description: Clôture par l'équipe d'un transport bloqué (litige, chauffeur absent,
+        client injoignable...).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backoffice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveShipmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResolveShipmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResolveShipmentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminShipmentDetail'
+          description: ''
   /api/backoffice/users/:
     get:
       operationId: backoffice_users_list
@@ -1578,6 +1613,18 @@ paths:
         required: true
       tags:
       - offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptOfferRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AcceptOfferRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AcceptOfferRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -1924,6 +1971,17 @@ paths:
           description: ''
 components:
   schemas:
+    AcceptOfferRequest:
+      type: object
+      description: 'Tarif affiché au client au moment d''accepter : refusé s''il ne
+        correspond plus à l''offre.'
+      properties:
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - price
     AccountTypeEnum:
       enum:
       - individual
@@ -2464,12 +2522,19 @@ components:
           type: string
         recipient_phone:
           type: string
+        delivered_with_code:
+          type: boolean
+          title: Livraison prouvée par le code
         events:
           type: array
           items:
             $ref: '#/components/schemas/ShipmentEvent'
+        can_resolve:
+          type: boolean
+          readOnly: true
       required:
       - agreed_price
+      - can_resolve
       - client
       - client_phone
       - confirmed_at
@@ -4461,6 +4526,26 @@ components:
         * `in_review` - En cours de traitement
         * `resolved` - Résolu
         * `dismissed` - Classé sans suite
+    ResolveShipmentRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ResolveShipmentStatusEnum'
+        note:
+          type: string
+          minLength: 1
+          maxLength: 400
+      required:
+      - note
+      - status
+    ResolveShipmentStatusEnum:
+      enum:
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `completed` - completed
+        * `cancelled` - cancelled
     Review:
       type: object
       properties:
@@ -4579,6 +4664,15 @@ components:
         can_review:
           type: string
           readOnly: true
+        delivery_code:
+          type: string
+          nullable: true
+          description: 'Jamais montré au chauffeur : il doit l''obtenir du destinataire,
+            sur place.'
+          readOnly: true
+        delivered_with_code:
+          type: boolean
+          title: Livraison prouvée par le code
       required:
       - agreed_price
       - allowed_transitions
@@ -4586,6 +4680,7 @@ components:
       - cargo
       - client
       - confirmed_at
+      - delivery_code
       - driver
       - events
       - id
@@ -4687,6 +4782,13 @@ components:
             type: string
             format: binary
           maxItems: 5
+        delivery_code:
+          oneOf:
+          - type: string
+            default: ''
+            pattern: ^\d{6}$
+          - type: string
+            maxLength: 0
       required:
       - status
     ShipmentList:

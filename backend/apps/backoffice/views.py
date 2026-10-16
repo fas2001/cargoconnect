@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts import identity as identity_services
+from apps.accounts import services as account_services
 from apps.accounts.models import ClientDocument, ClientIdentity, User
 from apps.cargos.models import Cargo
 from apps.common.exceptions import BusinessRuleError
@@ -22,6 +23,7 @@ from apps.drivers import services as driver_services
 from apps.drivers.admin_views import _serve
 from apps.drivers.models import DriverDocument, DriverProfile
 from apps.reports.models import Report
+from apps.shipments import services as shipment_services
 from apps.shipments.models import Shipment
 
 from . import serializers as s
@@ -199,10 +201,15 @@ class UserActivationView(StaffMixin, APIView):
         if user.is_staff:
             raise BusinessRuleError("Les comptes de l'équipe se gèrent depuis l'administration web.", code="staff_account")
         is_active = bool(request.data.get("is_active"))
-        user.is_active = is_active
-        user.save(update_fields=["is_active"])
+        open_shipments = 0
+        if is_active:
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+        elif user.is_active:
+            open_shipments = account_services.deactivate_user(user, reason="Compte suspendu par l'équipe CargoConnect.")
         log_admin_action(request.user, user, f"Compte {'réactivé' if is_active else 'suspendu'} (application)")
-        return Response(s.AdminUserSerializer(user, context={"request": request}).data)
+        # Transports en cours : l'équipe doit prévenir l'autre partie et les clôturer (voir « resolve »).
+        return Response({**s.AdminUserSerializer(user, context={"request": request}).data, "open_shipments": open_shipments})
 
 
 # --- Annonces, transports, signalements ------------------------------------------------
@@ -227,7 +234,10 @@ class ShipmentListView(StaffMixin, generics.ListAPIView):
         qs = Shipment.objects.select_related(
             "cargo__origin_city", "cargo__destination_city", "client", "driver__user"
         ).order_by("-confirmed_at")
-        if status_param := self.request.query_params.get("status"):
+        status_param = self.request.query_params.get("status")
+        if status_param == "attention":  # filtre « À traiter » : litiges et transports bloqués
+            qs = qs.filter(pk__in=shipment_services.needing_attention().values("pk"))
+        elif status_param:
             qs = qs.filter(status__in=status_param.split(","))
         return _search(qs, self.request, "cargo__title", "client__full_name", "driver__user__full_name")
 
@@ -237,6 +247,22 @@ class ShipmentDetailView(StaffMixin, generics.RetrieveAPIView):
     queryset = Shipment.objects.select_related(
         "cargo__origin_city", "cargo__destination_city", "client", "driver__user", "offer__vehicle"
     ).prefetch_related("events__actor", "events__photos")
+
+
+class ShipmentResolveView(StaffMixin, APIView):
+    """Clôture par l'équipe d'un transport bloqué (litige, chauffeur absent, client injoignable...)."""
+
+    @extend_schema(request=s.ResolveShipmentSerializer, responses={200: s.AdminShipmentDetailSerializer})
+    def post(self, request, pk):
+        require_perm(request.user, "shipments.change_shipment")
+        shipment = get_object_or_404(Shipment, pk=pk)
+        data = s.ResolveShipmentSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        decision, note = data.validated_data["status"], data.validated_data["note"]
+        shipment_services.resolve_by_staff(shipment=shipment, staff=request.user, to_status=decision, note=note)
+        shipment = ShipmentDetailView.queryset.get(pk=pk)
+        log_admin_action(request.user, shipment, f"Transport clôturé ({shipment.get_status_display()}) : {note} (application)")
+        return Response(s.AdminShipmentDetailSerializer(shipment, context={"request": request}).data)
 
 
 @extend_schema(parameters=[STATUS_PARAM])

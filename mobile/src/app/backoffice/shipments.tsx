@@ -10,6 +10,7 @@ import { formatDateTime, formatPrice } from '@/utils/format';
 
 const FILTERS: Filter[] = [
   { label: 'Tous' },
+  { label: 'À traiter', value: 'attention' },
   { label: 'En cours', value: 'confirmed,loaded,in_transit,delivered' },
   { label: 'Litiges', value: 'disputed' },
   { label: 'Livrés', value: 'completed' },

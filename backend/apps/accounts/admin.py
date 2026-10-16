@@ -9,6 +9,7 @@ from apps.drivers.admin import private_file_preview
 from apps.drivers.models import VerificationStatus
 
 from . import identity as identity_services
+from . import services
 from .models import ClientDocument, ClientIdentity, PhoneOTP, User
 
 
@@ -25,6 +26,21 @@ class UserAdmin(BaseUserAdmin):
         ("Dates", {"fields": ["last_login", "date_joined"]}),
     ]
     add_fieldsets = [(None, {"classes": ["wide"], "fields": ["phone", "full_name", "password1", "password2"]})]
+
+    def save_model(self, request, obj, form, change):
+        # Décocher « actif » ici doit avoir le même effet qu'une suspension depuis l'application.
+        suspended = change and "is_active" in form.changed_data and not obj.is_active
+        if suspended:
+            obj.is_active = True  # `deactivate_user` fait la désactivation elle-même, avec le nettoyage
+        super().save_model(request, obj, form, change)
+        if suspended:
+            open_shipments = services.deactivate_user(obj, reason="Compte suspendu par l'équipe CargoConnect.")
+            if open_shipments:
+                self.message_user(
+                    request,
+                    f"Compte suspendu avec {open_shipments} transport(s) en cours : prévenez l'autre partie et clôturez-les.",
+                    messages.WARNING,
+                )
 
 
 @admin.register(PhoneOTP)

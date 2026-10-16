@@ -95,7 +95,14 @@ export default function ShipmentScreen() {
 
       {error ? <Banner tone="danger" message={error} icon="alert-circle-outline" /> : null}
       {shipment.status === 'delivered' && shipment.my_role === 'client' ? (
-        <Banner tone="warning" message={t('Le transporteur a déclaré la livraison. Confirmez la réception, ou signalez un problème. Sans réponse sous 48 h, la livraison sera confirmée automatiquement.')} />
+        shipment.delivered_with_code ? (
+          <Banner tone="warning" message={t('Le transporteur a déclaré la livraison. Confirmez la réception, ou signalez un problème. Sans réponse sous 48 h, la livraison sera confirmée automatiquement.')} />
+        ) : (
+          <Banner tone="warning" message={t('Le transporteur a déclaré la livraison sans le code du destinataire. Vérifiez auprès du destinataire, puis confirmez la réception ou signalez un problème.')} />
+        )
+      ) : null}
+      {shipment.delivery_code ? (
+        <DeliveryCodeCard code={shipment.delivery_code} recipientPhone={cargo.recipient_phone} />
       ) : null}
       {shipment.status === 'disputed' ? (
         <Banner tone="danger" message={t("Un litige est ouvert. L'équipe CargoConnect vous contactera.")} />
@@ -196,6 +203,31 @@ function ProgressBar({ status }: { status: ShipmentStatus }) {
   );
 }
 
+/**
+ * Code de livraison (client seulement). Le destinataire le donne au chauffeur à la remise : c'est la
+ * preuve que la marchandise est arrivée à la bonne personne.
+ */
+function DeliveryCodeCard({ code, recipientPhone }: { code: string; recipientPhone?: string }) {
+  const share = () => {
+    const text = t('CargoConnect : votre code de livraison est {code}. Donnez-le au chauffeur uniquement à la réception de la marchandise.', { code });
+    void Linking.openURL(`https://wa.me/${(recipientPhone ?? '').replace('+', '')}?text=${encodeURIComponent(text)}`);
+  };
+  return (
+    <Card>
+      <Text style={styles.name}>{t('Code de livraison')}</Text>
+      <Text style={styles.code} selectable accessibilityLabel={code.split('').join(' ')}>
+        {code}
+      </Text>
+      <Text style={textStyles.secondary}>
+        {t("Donnez ce code à la personne qui recevra la marchandise. Le chauffeur le lui demandera à la livraison : ne le communiquez pas au chauffeur à l'avance.")}
+      </Text>
+      {recipientPhone ? (
+        <Button title={t('Envoyer au destinataire par WhatsApp')} icon="logo-whatsapp" variant="secondary" onPress={share} />
+      ) : null}
+    </Card>
+  );
+}
+
 function ContactButton({ icon, label, onPress }: { icon: 'call-outline' | 'logo-whatsapp'; label: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.contactButton}>
@@ -280,6 +312,7 @@ const styles = StyleSheet.create({
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
   price: { fontSize: FontSize.title, fontFamily: Fonts.bold, color: Colors.primary },
   name: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text },
+  code: { fontSize: 32, fontFamily: Fonts.bold, color: Colors.primary, letterSpacing: 6, fontVariant: ['tabular-nums'] },
   progress: { flexDirection: 'row', gap: 4, marginTop: Spacing.xs },
   step: { flex: 1, height: 6, borderRadius: 3, backgroundColor: Colors.border },
   stepDone: { backgroundColor: Colors.primary },

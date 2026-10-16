@@ -98,7 +98,8 @@ export const api = {
   updateOffer: (id: string, body: { price?: string; message?: string }) =>
     apiRequest<OwnOffer>(`/offers/${id}/`, { method: 'PATCH', body }),
   withdrawOffer: (id: string) => apiRequest<OwnOffer>(`/offers/${id}/withdraw/`, { method: 'POST' }),
-  acceptOffer: (id: string) => apiRequest<Shipment>(`/offers/${id}/accept/`, { method: 'POST' }),
+  /** `price` : le tarif affiché au client. Refusé (offer_changed) si le chauffeur l'a modifié entre-temps. */
+  acceptOffer: (id: string, price: string) => apiRequest<Shipment>(`/offers/${id}/accept/`, { method: 'POST', body: { price } }),
   rejectOffer: (id: string) => apiRequest<ClientOffer>(`/offers/${id}/reject/`, { method: 'POST' }),
   myOffers: (status?: string, page = 1) =>
     apiRequest<Paginated<MyOffer>>('/offers/mine/', { query: { status, page } }),
@@ -118,6 +119,7 @@ export const api = {
     if (proof.accuracy !== null) form.append('location_accuracy_m', String(Math.round(proof.accuracy)));
     if (proof.receiver_name) form.append('receiver_name', proof.receiver_name);
     if (proof.signature) form.append('signature', proof.signature);
+    if (proof.delivery_code) form.append('delivery_code', proof.delivery_code);
     for (const photo of proof.photos) await appendAsset(form, 'photos', photo);
     return apiRequest<Shipment>(`/shipments/${id}/events/`, { method: 'POST', body: form });
   },

@@ -9,7 +9,8 @@ from apps.drivers import services as driver_services
 from apps.drivers.models import DriverDocument, DriverProfile, VerificationEvent, VerificationStatus
 from apps.drivers.serializers import VehicleSerializer
 from apps.reports.models import Report
-from apps.shipments.models import Shipment
+from apps.shipments import services as shipment_services
+from apps.shipments.models import Shipment, ShipmentStatus
 from apps.shipments.serializers import ShipmentEventSerializer
 
 
@@ -303,6 +304,7 @@ class AdminShipmentDetailSerializer(AdminShipmentListSerializer):
     recipient_name = serializers.CharField(source="cargo.recipient_name")
     recipient_phone = serializers.CharField(source="cargo.recipient_phone")
     events = ShipmentEventSerializer(many=True)
+    can_resolve = serializers.SerializerMethodField()
 
     class Meta(AdminShipmentListSerializer.Meta):
         fields = AdminShipmentListSerializer.Meta.fields + [
@@ -314,8 +316,18 @@ class AdminShipmentDetailSerializer(AdminShipmentListSerializer):
             "declared_value",
             "recipient_name",
             "recipient_phone",
+            "delivered_with_code",
             "events",
+            "can_resolve",
         ]
+
+    def get_can_resolve(self, shipment) -> bool:
+        return shipment.status in shipment_services.OPEN_STATUSES
+
+
+class ResolveShipmentSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=[ShipmentStatus.COMPLETED, ShipmentStatus.CANCELLED])
+    note = serializers.CharField(max_length=400)
 
 
 class AdminReportSerializer(serializers.ModelSerializer):

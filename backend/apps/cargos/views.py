@@ -70,7 +70,7 @@ class CargoViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Up
         qs = self._base_queryset()
         if self.action == "list":
             return (
-                qs.filter(status=CargoStatus.PUBLISHED, expires_at__gte=timezone.now())
+                qs.filter(status=CargoStatus.PUBLISHED, expires_at__gte=timezone.now(), client__is_active=True)
                 .exclude(client=user)
                 .order_by("loading_date", "-published_at")
             )
