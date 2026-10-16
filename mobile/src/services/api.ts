@@ -63,24 +63,32 @@ export function setSessionExpiredHandler(handler: () => void) {
   onSessionExpired = handler;
 }
 
-// Une seule requête de rafraîchissement à la fois, partagée par les appels concurrents.
-let refreshing: Promise<string | null> | null = null;
+/**
+ * Résultat du renouvellement : `expired` seulement si le serveur refuse le jeton (session révoquée ou
+ * périmée). Un réseau coupé ou un serveur en panne (`unavailable`) ne doit pas déconnecter : sur la route,
+ * le chauffeur perd souvent le réseau, et la session (protégée par empreinte ou non) doit survivre.
+ */
+type RefreshResult = { token: string } | 'expired' | 'unavailable';
 
-async function refreshAccessToken(): Promise<string | null> {
+// Une seule requête de rafraîchissement à la fois, partagée par les appels concurrents.
+let refreshing: Promise<RefreshResult> | null = null;
+
+async function refreshAccessToken(): Promise<RefreshResult> {
   const refresh = await tokenStorage.getRefresh();
-  if (!refresh) return null;
+  if (!refresh) return 'expired';
   try {
-    const res = await fetch(`${API_URL}/auth/refresh/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh }),
-    });
-    if (!res.ok) return null;
+    const res = await send(
+      `${API_URL}/auth/refresh/`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh }) },
+      null,
+    );
+    if (res.status === 400 || res.status === 401) return 'expired';
+    if (!res.ok) return 'unavailable';
     const data = (await res.json()) as { access: string; refresh?: string };
     await tokenStorage.setTokens(data.access, data.refresh);
-    return data.access;
+    return { token: data.access };
   } catch {
-    return null;
+    return 'unavailable';
   }
 }
 
@@ -130,12 +138,16 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     refreshing ??= refreshAccessToken().finally(() => {
       refreshing = null;
     });
-    token = await refreshing;
-    if (!token) {
+    const result = await refreshing;
+    if (result === 'unavailable') {
+      throw new ApiError(t('Connexion impossible. Vérifiez votre réseau et réessayez.'), 0, 'network');
+    }
+    if (result === 'expired') {
       await tokenStorage.clear();
       onSessionExpired?.();
       throw new ApiError(t('Votre session a expiré. Reconnectez-vous.'), 401, 'session_expired');
     }
+    token = result.token;
     res = await send(url, init, token);
   }
 

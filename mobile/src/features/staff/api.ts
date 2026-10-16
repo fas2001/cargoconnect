@@ -18,6 +18,8 @@ export type Dashboard = {
   documents_pending: number;
   reports_open: number;
   shipments_disputed: number;
+  /** Litiges compris, plus les transports bloqués (chargement en retard, trajet trop long, livraison non confirmée). */
+  shipments_attention: number;
   users_total: number;
   drivers_total: number;
   clients_total: number;
@@ -161,7 +163,9 @@ export type AdminShipmentDetail = AdminShipment & {
   declared_value: string | null;
   recipient_name: string;
   recipient_phone: string;
+  delivered_with_code: boolean;
   events: ShipmentEvent[];
+  can_resolve: boolean;
 };
 
 export type ReportStatus = 'open' | 'in_review' | 'resolved' | 'dismissed';
@@ -204,12 +208,15 @@ export const adminApi = {
     apiRequest<AdminClientDocument>(`${B}/client-documents/${id}/decision/`, { method: 'POST', body }),
 
   users: (query: ListQuery) => apiRequest<Paginated<AdminUser>>(`${B}/users/`, { query }),
+  /** `open_shipments` : transports en cours du compte suspendu, à suivre par l'équipe. */
   setUserActive: (id: string, is_active: boolean) =>
-    apiRequest<AdminUser>(`${B}/users/${id}/activation/`, { method: 'POST', body: { is_active } }),
+    apiRequest<AdminUser & { open_shipments: number }>(`${B}/users/${id}/activation/`, { method: 'POST', body: { is_active } }),
 
   cargos: (query: ListQuery) => apiRequest<Paginated<AdminCargo>>(`${B}/cargos/`, { query }),
   shipments: (query: ListQuery) => apiRequest<Paginated<AdminShipment>>(`${B}/shipments/`, { query }),
   shipment: (id: string) => apiRequest<AdminShipmentDetail>(`${B}/shipments/${id}/`),
+  resolveShipment: (id: string, body: { status: 'completed' | 'cancelled'; note: string }) =>
+    apiRequest<AdminShipmentDetail>(`${B}/shipments/${id}/resolve/`, { method: 'POST', body }),
 
   reports: (query: ListQuery) => apiRequest<Paginated<AdminReport>>(`${B}/reports/`, { query }),
   updateReport: (id: string, body: { status?: ReportStatus; admin_note?: string }) =>

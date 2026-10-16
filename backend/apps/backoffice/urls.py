@@ -19,6 +19,7 @@ urlpatterns = [
     path("cargos/", views.CargoListView.as_view(), name="backoffice-cargos"),
     path("shipments/", views.ShipmentListView.as_view(), name="backoffice-shipments"),
     path("shipments/<uuid:pk>/", views.ShipmentDetailView.as_view(), name="backoffice-shipment"),
+    path("shipments/<uuid:pk>/resolve/", views.ShipmentResolveView.as_view(), name="backoffice-shipment-resolve"),
     path("reports/", views.ReportListView.as_view(), name="backoffice-reports"),
     path("reports/<uuid:pk>/", views.ReportUpdateView.as_view(), name="backoffice-report"),
 ]

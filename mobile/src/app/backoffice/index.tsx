@@ -22,7 +22,7 @@ export default function BackofficeHome() {
         <Tile value={d.drivers_pending} label="Transporteurs à vérifier" todo href={{ pathname: '/backoffice/drivers', params: { status: 'pending' } }} />
         <Tile value={d.identities_pending} label="Identités clients à vérifier" todo href={{ pathname: '/backoffice/identities', params: { status: 'pending' } }} />
         <Tile value={d.reports_open} label="Signalements ouverts" todo href="/backoffice/reports" />
-        <Tile value={d.shipments_disputed} label="Transports en litige" todo href={{ pathname: '/backoffice/shipments', params: { status: 'disputed' } }} />
+        <Tile value={d.shipments_attention} label="Transports bloqués ou en litige" todo href={{ pathname: '/backoffice/shipments', params: { status: 'attention' } }} />
       </View>
       <Text style={textStyles.caption}>{d.documents_pending} justificatif(s) en attente de vérification au total.</Text>
 

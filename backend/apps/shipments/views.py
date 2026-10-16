@@ -68,6 +68,7 @@ class ShipmentViewSet(viewsets.ReadOnlyModelViewSet):
             to_status=serializer.validated_data["status"],
             note=serializer.validated_data["note"],
             proof=serializer.proof(),
+            delivery_code=serializer.validated_data["delivery_code"],
         )
         shipment = self.get_queryset().get(pk=shipment.pk)
         return Response(ShipmentSerializer(shipment, context=self.get_serializer_context()).data, status=status.HTTP_201_CREATED)

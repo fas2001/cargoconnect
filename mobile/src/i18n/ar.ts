@@ -499,6 +499,41 @@ export const ar = {
   'Reconnectez-vous en cochant « Se souvenir de moi » pour utiliser cette option.': 'أعد تسجيل الدخول مع تفعيل « تذكرني » لاستعمال هذا الخيار.',
   'À chaque ouverture, l’application demandera votre {method}. Votre empreinte reste dans le téléphone : CargoConnect ne la reçoit jamais. Après « Se déconnecter », elle permet de revenir sans mot de passe ; pour tout effacer, désactivez-la d’abord.': 'عند كل فتح، سيطلب التطبيق {method}. تبقى بصمتك داخل الهاتف: لا يتوصل بها CargoConnect أبدًا. بعد « تسجيل الخروج » يمكنك العودة بدون كلمة المرور؛ لمسح كل شيء، عطّل هذا الخيار أولًا.',
   'Se connecter avec {method}': 'الدخول بواسطة {method}',
+
+  // --- Camion adapté, code de livraison -------------------------------------
+  'Aucun de vos camions ne convient : cette annonce demande un camion « {type} » pouvant porter {weight}.':
+    'لا تناسب أي من شاحناتك هذا الإعلان: يطلب شاحنة « {type} » بحمولة {weight}.',
+  'Code de livraison': 'رمز التسليم',
+  'Code donné par le destinataire (6 chiffres)': 'الرمز الذي يعطيه المستلم (6 أرقام)',
+  'Sans ce code, le client devra confirmer lui-même la livraison avant clôture.':
+    'بدون هذا الرمز، يجب على الزبون تأكيد التسليم بنفسه قبل الإغلاق.',
+  'Le transporteur a déclaré la livraison sans le code du destinataire. Vérifiez auprès du destinataire, puis confirmez la réception ou signalez un problème.':
+    'صرّح الناقل بالتسليم بدون رمز المستلم. تحقق مع المستلم، ثم أكّد الاستلام أو أبلغ عن مشكلة.',
+  "Donnez ce code à la personne qui recevra la marchandise. Le chauffeur le lui demandera à la livraison : ne le communiquez pas au chauffeur à l'avance.":
+    'أعطِ هذا الرمز للشخص الذي سيستلم البضاعة. سيطلبه منه السائق عند التسليم: لا تعطه للسائق مسبقًا.',
+  'Envoyer au destinataire par WhatsApp': 'إرساله إلى المستلم عبر واتساب',
+  'CargoConnect : votre code de livraison est {code}. Donnez-le au chauffeur uniquement à la réception de la marchandise.':
+    'CargoConnect: رمز التسليم الخاص بك هو {code}. أعطه للسائق فقط عند استلام البضاعة.',
+
+  // Textes du serveur (voir `tr`)
+  'Choisissez le camion qui fera ce transport.': 'اختر الشاحنة التي ستقوم بهذا النقل.',
+  "Ce camion n'est pas du type demandé dans l'annonce.": 'هذه الشاحنة ليست من النوع المطلوب في الإعلان.',
+  'Ce camion ne peut pas porter le poids de cette cargaison.': 'لا تستطيع هذه الشاحنة حمل وزن هذه البضاعة.',
+  'Ce camion a été retiré de votre profil.': 'تمت إزالة هذه الشاحنة من ملفك.',
+  "La carte grise et l'assurance de ce camion doivent être vérifiées par notre équipe avant de l'utiliser.":
+    'يجب أن يتحقق فريقنا من البطاقة الرمادية وتأمين هذه الشاحنة قبل استعمالها.',
+  'Un justificatif de ce camion a été refusé. Envoyez une version valide depuis votre profil.':
+    'تم رفض إحدى وثائق هذه الشاحنة. أرسل نسخة صالحة من ملفك.',
+  'Un justificatif de ce camion a expiré (assurance ou carte grise). Envoyez une version à jour.':
+    'انتهت صلاحية إحدى وثائق هذه الشاحنة (التأمين أو البطاقة الرمادية). أرسل نسخة محدّثة.',
+  "Le transporteur vient de modifier son tarif. Vérifiez la nouvelle proposition avant d'accepter.":
+    'قام الناقل للتو بتعديل سعره. راجع العرض الجديد قبل القبول.',
+  'Ce transporteur ne peut plus être retenu pour le moment. Choisissez une autre proposition.':
+    'لا يمكن اختيار هذا الناقل حاليًا. اختر عرضًا آخر.',
+  'Code de livraison incorrect. Demandez-le au destinataire, ou déclarez la livraison sans code.':
+    'رمز التسليم غير صحيح. اطلبه من المستلم، أو صرّح بالتسليم بدون رمز.',
+  "Trop d'essais : le code de livraison est bloqué. Déclarez la livraison sans code, le client devra la confirmer.":
+    'محاولات كثيرة: تم حظر رمز التسليم. صرّح بالتسليم بدون رمز، وسيتعين على الزبون تأكيده.',
 };
 
 export type TKey = keyof typeof ar;

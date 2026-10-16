@@ -194,6 +194,8 @@ CARGOCONNECT = {
     "REQUIRE_VERIFIED_DRIVER_TO_OFFER": env_bool("REQUIRE_VERIFIED_DRIVER_TO_OFFER", True),
     # Délai après lequel une livraison déclarée est confirmée automatiquement.
     "DELIVERY_AUTO_CONFIRM_HOURS": int(os.environ.get("DELIVERY_AUTO_CONFIRM_HOURS", "48")),
+    # Au-delà de N jours entre chargement et livraison, le transport est signalé à l'équipe.
+    "SHIPMENT_STALE_TRANSIT_DAYS": int(os.environ.get("SHIPMENT_STALE_TRANSIT_DAYS", "4")),
     # Une annonce expire N jours après la date de chargement souhaitée.
     "CARGO_EXPIRY_DAYS_AFTER_LOADING": int(os.environ.get("CARGO_EXPIRY_DAYS_AFTER_LOADING", "1")),
     "MAX_CARGO_PHOTOS": 5,

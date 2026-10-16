@@ -78,6 +78,7 @@ function ProofForm({
   const [receiver, setReceiver] = useState(defaultReceiver);
   const [signature, setSignature] = useState('');
   const [signing, setSigning] = useState(false);
+  const [deliveryCode, setDeliveryCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
@@ -115,7 +116,10 @@ function ProofForm({
     if (!result.canceled) setPhotos((list) => [...list, result.assets[0]].slice(0, MAX_PHOTOS));
   };
 
-  const ready = photos.length > 0 && position !== null && (!withSignature || (receiver.trim() !== '' && signature !== ''));
+  // Le code est facultatif, mais s'il est commencé il doit être complet.
+  const codeOk = deliveryCode.length === 0 || deliveryCode.length === 6;
+  const ready =
+    photos.length > 0 && position !== null && (!withSignature || (receiver.trim() !== '' && signature !== '' && codeOk));
 
   const submit = async () => {
     if (!ready || !position) return;
@@ -125,7 +129,7 @@ function ProofForm({
       await onSubmit({
         photos,
         ...position,
-        ...(withSignature ? { receiver_name: receiver.trim(), signature } : {}),
+        ...(withSignature ? { receiver_name: receiver.trim(), signature, delivery_code: deliveryCode || undefined } : {}),
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : t('Une erreur inattendue est survenue.'));
@@ -179,6 +183,15 @@ function ProofForm({
             <Step done={receiver.trim() !== '' && signature !== ''} label={t('Réception de la marchandise')} />
             <TextField label={t('Nom de la personne qui réceptionne')} value={receiver} onChangeText={setReceiver} />
             <SignaturePad onChange={setSignature} onSigning={setSigning} />
+            <Step done={deliveryCode.length === 6} label={t('Code de livraison')} />
+            <TextField
+              label={t('Code donné par le destinataire (6 chiffres)')}
+              keyboardType="number-pad"
+              maxLength={6}
+              value={deliveryCode}
+              onChangeText={(text) => setDeliveryCode(text.replace(/[^\d]/g, ''))}
+              hint={t('Sans ce code, le client devra confirmer lui-même la livraison avant clôture.')}
+            />
           </>
         ) : null}
 

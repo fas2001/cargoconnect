@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import ClientDocument, ClientIdentity, User
 from apps.cargos.models import Cargo, CargoStatus, City, GoodsCategory
 from apps.cargos.services import publish_cargo
-from apps.drivers.models import DriverProfile, VerificationStatus
+from apps.drivers.models import DriverDocument, DriverProfile, VerificationStatus
 from apps.vehicles.models import TruckType, Vehicle
 
 PASSWORD = "Camion-Maroc-2026"
@@ -32,15 +32,40 @@ def make_user(phone, name="Test User"):
 
 
 def make_driver(phone, name="Driss Chauffeur", verified=True):
+    """Chauffeur avec un plateau et un fourgon. Vérifié : tous ses justificatifs exigés sont validés et à jour."""
     user = make_user(phone, name)
     profile = DriverProfile.objects.create(
         user=user,
         verification_status=VerificationStatus.VERIFIED if verified else VerificationStatus.PENDING,
     )
-    Vehicle.objects.create(
-        driver=profile, truck_type=TruckType.PLATEAU, capacity_kg=20000, registration_number=f"REG-{phone[-4:]}"
-    )
+    for truck_type in (TruckType.PLATEAU, TruckType.FOURGON):
+        Vehicle.objects.create(
+            driver=profile, truck_type=truck_type, capacity_kg=20000, registration_number=f"REG-{truck_type}-{phone[-4:]}"
+        )
+    if verified:
+        give_driver_documents(profile, VerificationStatus.VERIFIED)
     return user
+
+
+def give_driver_documents(profile, status=VerificationStatus.PENDING):
+    """Tous les justificatifs exigés (personnels et par camion actif), avec le statut donné."""
+    from apps.drivers.services import REQUIRED_PER_VEHICLE, REQUIRED_PERSONAL
+
+    expires = timezone.localdate() + timedelta(days=365)
+    items = [(doc_type, side, None) for doc_type, side in REQUIRED_PERSONAL]
+    for vehicle in profile.vehicles.filter(is_active=True):
+        items += [(doc_type, side, vehicle) for doc_type, side in REQUIRED_PER_VEHICLE]
+    return [
+        DriverDocument.objects.create(
+            driver=profile, doc_type=doc_type, side=side, vehicle=vehicle, file=proof_photo(), status=status, expires_on=expires
+        )
+        for doc_type, side, vehicle in items
+    ]
+
+
+def vehicle_for(driver_user, cargo):
+    """Camion du chauffeur adapté à l'annonce (même type)."""
+    return driver_user.driver_profile.vehicles.get(truck_type=cargo.truck_type)
 
 
 def auth(user) -> APIClient:
@@ -142,6 +167,12 @@ def proof_for(status):
 
 
 def offer_on(cargo, driver_user, price="5000", message=""):
-    response = auth(driver_user).post(f"/api/cargos/{cargo.pk}/offers/", {"price": price, "message": message})
+    payload = {"price": price, "message": message, "vehicle": str(vehicle_for(driver_user, cargo).pk)}
+    response = auth(driver_user).post(f"/api/cargos/{cargo.pk}/offers/", payload)
     assert response.status_code == 201, response.data
     return response.data
+
+
+def accept(client_user, offer):
+    """Le client accepte l'offre au tarif qu'il voit affiché."""
+    return auth(client_user).post(f"/api/offers/{offer['id']}/accept/", {"price": offer["price"]})

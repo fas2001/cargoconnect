@@ -6,7 +6,7 @@ from apps.drivers.models import DocumentAccessLog, DriverDocument, VerificationE
 from apps.notifications.models import Notification
 from apps.reports.models import Report
 
-from .conftest import PASSWORD, auth, proof_photo
+from .conftest import PASSWORD, auth, give_driver_documents, proof_photo
 
 
 @pytest.fixture
@@ -52,9 +52,17 @@ def test_verify_driver_from_the_app(admin_user, published_cargo):
 
     assert api.post(f"/api/backoffice/drivers/{profile.pk}/decision/", {"status": "rejected"}, format="json").status_code == 400
     assert api.post(f"/api/backoffice/driver-documents/{document['id']}/decision/", {"status": "verified"}, format="json").status_code == 200
+
+    # Le profil ne peut être vérifié qu'une fois chaque justificatif exigé validé (personnels et camions).
+    refused = api.post(f"/api/backoffice/drivers/{profile.pk}/decision/", {"status": "verified"}, format="json")
+    assert refused.status_code == 409 and refused.data["code"] == "documents_not_verified"
+    others = give_driver_documents(profile)
+    for other in others:
+        api.post(f"/api/backoffice/driver-documents/{other.pk}/decision/", {"status": "verified"}, format="json")
+
     response = api.post(f"/api/backoffice/drivers/{profile.pk}/decision/", {"status": "verified"}, format="json")
     assert response.status_code == 200 and response.data["verification_status"] == "verified"
-    assert VerificationEvent.objects.filter(driver=profile, decided_by=admin_user).count() == 2
+    assert VerificationEvent.objects.filter(driver=profile, decided_by=admin_user).count() == 2 + len(others)
     assert Notification.objects.filter(user=driver, kind="profile_reviewed").exists()
     assert DriverDocument.objects.get(pk=document["id"]).reviewed_by == admin_user
 
@@ -99,10 +107,10 @@ def test_suspend_account_and_handle_report(admin_user, client_user, driver_a):
 
 @pytest.mark.django_db
 def test_shipment_file_with_proofs(admin_user, client_user, driver_a, published_cargo):
-    from .conftest import offer_on
+    from .conftest import accept, offer_on
 
     offer = offer_on(published_cargo, driver_a)
-    shipment_id = auth(client_user).post(f"/api/offers/{offer['id']}/accept/").data["id"]
+    shipment_id = accept(client_user, offer).data["id"]
     api = auth(admin_user)
     assert api.get("/api/backoffice/shipments/").data["results"][0]["id"] == shipment_id
     detail = api.get(f"/api/backoffice/shipments/{shipment_id}/").data
@@ -120,3 +128,37 @@ def test_web_admin_dashboard_and_document_previews(admin_user, driver_a, client_
     assert "/admin/justificatifs/" in driver_page and "<img" in driver_page
     identity_page = client.get(f"/admin/accounts/clientidentity/{client_user.client_identity.pk}/change/")
     assert identity_page.status_code == 200 and "/admin/justificatifs-clients/" in identity_page.content.decode()
+
+
+@pytest.mark.django_db
+def test_suspension_removes_the_account_from_the_marketplace(admin_user, client_user, driver_a, driver_b, published_cargo):
+    from apps.cargos.models import CargoStatus
+    from apps.offers.models import Offer, OfferStatus
+
+    from .conftest import offer_on
+
+    offer_a = offer_on(published_cargo, driver_a)
+    offer_on(published_cargo, driver_b)
+    api = auth(admin_user)
+
+    # Chauffeur suspendu : son offre disparaît, il ne peut plus être retenu.
+    suspended = api.post(f"/api/backoffice/users/{driver_a.pk}/activation/", {"is_active": False}, format="json")
+    assert suspended.data["is_active"] is False and suspended.data["open_shipments"] == 0
+    assert Offer.objects.get(pk=offer_a["id"]).status == OfferStatus.WITHDRAWN
+
+    # Client suspendu : ses annonces ouvertes sont annulées et les chauffeurs prévenus.
+    api.post(f"/api/backoffice/users/{client_user.pk}/activation/", {"is_active": False}, format="json")
+    published_cargo.refresh_from_db()
+    assert published_cargo.status == CargoStatus.CANCELLED
+    assert Offer.objects.get(driver__user=driver_b).status == OfferStatus.CLOSED
+    assert Notification.objects.filter(user=driver_b, kind="offer_closed").exists()
+    assert auth(driver_b).get("/api/cargos/").data["count"] == 0
+
+
+@pytest.mark.django_db
+def test_suspension_reports_open_shipments(admin_user, client_user, driver_a, published_cargo):
+    from .conftest import accept, offer_on
+
+    accept(client_user, offer_on(published_cargo, driver_a))
+    response = auth(admin_user).post(f"/api/backoffice/users/{driver_a.pk}/activation/", {"is_active": False}, format="json")
+    assert response.data["open_shipments"] == 1

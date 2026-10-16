@@ -124,11 +124,12 @@ function OwnerSection({ cargo }: { cargo: CargoDetail }) {
     setError(null);
     setBusy(offer.id);
     try {
-      const shipment = await api.acceptOffer(offer.id);
+      const shipment = await api.acceptOffer(offer.id, offer.price);
       await refreshAll();
       await queryClient.invalidateQueries({ queryKey: ['shipments'] });
       router.replace({ pathname: '/shipment/[id]', params: { id: shipment.id } });
     } catch (e) {
+      // Tarif modifié, transporteur indisponible… : la liste rechargée montre l'état réel des offres.
       setError(errorMessage(e));
       await refreshAll();
     } finally {
@@ -283,15 +284,21 @@ function OfferForm({ cargo, existing, onDone }: { cargo: CargoDetail; existing?:
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const vehicles = (profile.data?.vehicles ?? []).filter((v) => v.is_active);
+  // Seuls les camions du type demandé et assez puissants pour le poids peuvent être proposés.
+  const vehicles = (profile.data?.vehicles ?? []).filter(
+    (v) => v.is_active && v.truck_type === cargo.truck_type && Number(v.capacity_kg) >= Number(cargo.weight_kg),
+  );
   const notVerified = profile.data && profile.data.verification_status !== 'verified';
+  const noSuitableTruck = !existing && profile.data && vehicles.length === 0;
+  // Un seul camion adapté : il est choisi d'office.
+  const selectedVehicle = vehicle ?? (vehicles.length === 1 ? vehicles[0].id : null);
 
   const submit = async () => {
     setError(null);
     setLoading(true);
     try {
       if (existing) await api.updateOffer(existing.id, { price, message });
-      else await api.createOffer(cargo.id, { price, message, vehicle });
+      else await api.createOffer(cargo.id, { price, message, vehicle: selectedVehicle });
       await queryClient.invalidateQueries({ queryKey: ['cargo', cargo.id] });
       await queryClient.invalidateQueries({ queryKey: ['offers'] });
       onDone?.();
@@ -308,6 +315,15 @@ function OfferForm({ cargo, existing, onDone }: { cargo: CargoDetail; existing?:
       {notVerified && !existing ? (
         <Banner tone="warning" message={t('Votre profil doit être vérifié pour envoyer une proposition. Ajoutez vos justificatifs depuis votre profil.')} />
       ) : null}
+      {noSuitableTruck ? (
+        <Banner
+          tone="warning"
+          message={t('Aucun de vos camions ne convient : cette annonce demande un camion « {type} » pouvant porter {weight}.', {
+            type: tr(cargo.truck_type_label),
+            weight: formatWeight(cargo.weight_kg),
+          })}
+        />
+      ) : null}
       {error ? <Banner tone="danger" message={error} /> : null}
       <TextField label={t('Tarif (DH)')} keyboardType="number-pad" value={price} onChangeText={(text) => setPrice(text.replace(/[^\d]/g, ''))} />
       {!existing && vehicles.length ? (
@@ -315,7 +331,7 @@ function OfferForm({ cargo, existing, onDone }: { cargo: CargoDetail; existing?:
           label={t('Véhicule')}
           placeholder={t('Choisir un véhicule')}
           options={vehicles.map((v) => ({ value: v.id, label: `${tr(v.truck_type_label)} — ${v.registration_number}`, sublabel: formatWeight(v.capacity_kg) }))}
-          value={vehicle}
+          value={selectedVehicle}
           onChange={setVehicle}
         />
       ) : null}
@@ -328,7 +344,12 @@ function OfferForm({ cargo, existing, onDone }: { cargo: CargoDetail; existing?:
         onChangeText={setMessage}
         hint={t('Pas de numéro de téléphone : il sera partagé si votre offre est acceptée.')}
       />
-      <Button title={existing ? t('Enregistrer') : t('Envoyer ma proposition')} loading={loading} disabled={!price || Number(price) <= 0} onPress={submit} />
+      <Button
+        title={existing ? t('Enregistrer') : t('Envoyer ma proposition')}
+        loading={loading}
+        disabled={!price || Number(price) <= 0 || (!existing && !selectedVehicle)}
+        onPress={submit}
+      />
       {onDone ? <Button title={t('Annuler')} variant="ghost" onPress={onDone} /> : null}
     </Card>
   );

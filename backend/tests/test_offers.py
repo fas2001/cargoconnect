@@ -7,7 +7,7 @@ from apps.cargos.models import CargoStatus
 from apps.offers.models import Offer, OfferStatus
 from apps.shipments.models import Shipment
 
-from .conftest import auth, make_driver, offer_on
+from .conftest import accept, auth, make_driver, offer_on, vehicle_for
 
 
 @pytest.mark.django_db
@@ -35,7 +35,8 @@ def test_offer_rules(client_user, driver_a, published_cargo):
     assert own.status_code == 409 and own.data["code"] == "own_cargo"
 
     offer_on(published_cargo, driver_a)
-    duplicate = auth(driver_a).post(f"/api/cargos/{published_cargo.pk}/offers/", {"price": "4000"})
+    vehicle = str(vehicle_for(driver_a, published_cargo).pk)
+    duplicate = auth(driver_a).post(f"/api/cargos/{published_cargo.pk}/offers/", {"price": "4000", "vehicle": vehicle})
     assert duplicate.status_code == 409 and duplicate.data["code"] == "offer_exists"
 
     no_profile = auth(client_user).post(f"/api/cargos/{published_cargo.pk}/offers/", {"price": "4000"})
@@ -74,7 +75,7 @@ def test_accept_creates_one_shipment_and_closes_other_offers(client_user, driver
     offer_a = offer_on(published_cargo, driver_a, "5000")
     offer_b = offer_on(published_cargo, driver_b, "4800")
 
-    accepted = auth(client_user).post(f"/api/offers/{offer_b['id']}/accept/")
+    accepted = accept(client_user, offer_b)
     assert accepted.status_code == 201, accepted.data
     assert accepted.data["status"] == "confirmed"
     # Après confirmation, les coordonnées complètes sont partagées.
@@ -88,7 +89,7 @@ def test_accept_creates_one_shipment_and_closes_other_offers(client_user, driver
     assert Shipment.objects.filter(cargo=published_cargo).count() == 1
 
     # Deuxième acceptation : refusée par la règle métier.
-    second = auth(client_user).post(f"/api/offers/{offer_a['id']}/accept/")
+    second = accept(client_user, offer_a)
     assert second.status_code == 409
     assert Shipment.objects.count() == 1
 
@@ -107,8 +108,8 @@ def test_accept_creates_one_shipment_and_closes_other_offers(client_user, driver
 @pytest.mark.django_db
 def test_only_cargo_owner_can_accept(driver_a, driver_b, published_cargo):
     offer = offer_on(published_cargo, driver_a)
-    assert auth(driver_a).post(f"/api/offers/{offer['id']}/accept/").status_code == 403
-    assert auth(driver_b).post(f"/api/offers/{offer['id']}/accept/").status_code == 404
+    assert accept(driver_a, offer).status_code == 403
+    assert accept(driver_b, offer).status_code == 404
 
 
 @pytest.mark.django_db
@@ -129,14 +130,14 @@ def test_concurrent_accepts_yield_a_single_shipment(client_user, driver_a, drive
     results = []
     barrier = threading.Barrier(2)
 
-    def accept(offer_id):
+    def accept_concurrently(offer):
         try:
             barrier.wait()
-            results.append(auth(client_user).post(f"/api/offers/{offer_id}/accept/").status_code)
+            results.append(accept(client_user, offer).status_code)
         finally:
             connection.close()
 
-    threads = [threading.Thread(target=accept, args=(o["id"],)) for o in offers]
+    threads = [threading.Thread(target=accept_concurrently, args=(o,)) for o in offers]
     for t in threads:
         t.start()
     for t in threads:
@@ -145,3 +146,35 @@ def test_concurrent_accepts_yield_a_single_shipment(client_user, driver_a, drive
     assert sorted(results) == [201, 409]
     assert Shipment.objects.filter(cargo=published_cargo).count() == 1
     assert Offer.objects.filter(cargo=published_cargo, status=OfferStatus.ACCEPTED).count() == 1
+
+
+@pytest.mark.django_db
+def test_accept_is_refused_if_the_driver_changed_the_price(client_user, driver_a, published_cargo):
+    offer = offer_on(published_cargo, driver_a, "5000")
+    auth(driver_a).patch(f"/api/offers/{offer['id']}/", {"price": "6500"})
+
+    stale = accept(client_user, offer)  # le client avait encore 5 000 à l'écran
+    assert stale.status_code == 409 and stale.data["code"] == "offer_changed"
+    assert not Shipment.objects.exists()
+    assert auth(client_user).post(f"/api/offers/{offer['id']}/accept/").status_code == 400  # tarif obligatoire
+    assert accept(client_user, {**offer, "price": "6500.00"}).status_code == 201
+
+
+@pytest.mark.django_db
+def test_offer_from_a_driver_who_lost_verification_cannot_be_accepted(client_user, driver_a, published_cargo):
+    from apps.drivers.models import VerificationStatus
+
+    offer = offer_on(published_cargo, driver_a)
+    driver_a.driver_profile.__class__.objects.filter(pk=driver_a.driver_profile.pk).update(
+        verification_status=VerificationStatus.PENDING
+    )
+    response = accept(client_user, offer)
+    assert response.status_code == 409 and response.data["code"] == "driver_unavailable"
+
+
+@pytest.mark.django_db
+def test_editing_an_offer_rechecks_the_truck(driver_a, published_cargo):
+    offer = offer_on(published_cargo, driver_a)
+    wrong_type = driver_a.driver_profile.vehicles.exclude(truck_type=published_cargo.truck_type).first()
+    response = auth(driver_a).patch(f"/api/offers/{offer['id']}/", {"vehicle": str(wrong_type.pk)})
+    assert response.status_code == 409 and response.data["code"] == "vehicle_unsuitable"

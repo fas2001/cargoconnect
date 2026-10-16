@@ -34,6 +34,11 @@ class Shipment(BaseModel):
     loaded_at = models.DateTimeField(null=True, blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    # Code remis par le client au destinataire, que le chauffeur saisit à la livraison : il prouve que la
+    # marchandise a été remise à la bonne personne. Visible seulement du client (voir ShipmentSerializer).
+    delivery_code = models.CharField("code de livraison", max_length=6, blank=True)
+    delivery_code_attempts = models.PositiveSmallIntegerField("essais de code", default=0)
+    delivered_with_code = models.BooleanField("livraison prouvée par le code", default=False)
 
     class Meta(BaseModel.Meta):
         verbose_name = "transport"

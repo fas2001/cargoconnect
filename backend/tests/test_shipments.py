@@ -4,22 +4,24 @@ import pytest
 from django.core.management import call_command
 from django.utils import timezone
 
-from apps.cargos.models import CargoStatus
+from apps.cargos.models import Cargo, CargoStatus
 from apps.shipments.models import Shipment, ShipmentStatus
 
-from .conftest import auth, make_user, offer_on, proof_for
+from .conftest import accept, auth, make_user, offer_on, proof_for
 
 
 @pytest.fixture
 def shipment(client_user, driver_a, published_cargo):
     offer = offer_on(published_cargo, driver_a)
-    response = auth(client_user).post(f"/api/offers/{offer['id']}/accept/")
+    response = accept(client_user, offer)
     assert response.status_code == 201
     return Shipment.objects.get(pk=response.data["id"])
 
 
-def move(user, shipment, status, note="", proof=True):
+def move(user, shipment, status, note="", proof=True, code=""):
     data = {"status": status, "note": note, **(proof_for(status) if proof else {})}
+    if code:
+        data["delivery_code"] = code
     return auth(user).post(f"/api/shipments/{shipment.pk}/events/", data, format="multipart")
 
 
@@ -80,13 +82,12 @@ def test_shipment_list_by_role(client_user, driver_a, shipment):
 
 @pytest.mark.django_db
 def test_periodic_tasks_autocomplete_and_expire(client_user, driver_a, shipment, published_cargo, cargo_payload):
-    for status in ("loaded", "in_transit", "delivered"):
-        move(driver_a, shipment, status)
+    move(driver_a, shipment, "loaded")
+    move(driver_a, shipment, "in_transit")
+    move(driver_a, shipment, "delivered", code=shipment.delivery_code)
     Shipment.objects.filter(pk=shipment.pk).update(delivered_at=timezone.now() - timedelta(hours=49))
 
     stale = auth(client_user).post("/api/cargos/", {**cargo_payload, "publish": True}).data
-    from apps.cargos.models import Cargo
-
     Cargo.objects.filter(pk=stale["id"]).update(expires_at=timezone.now() - timedelta(minutes=1))
 
     call_command("periodic_tasks")
@@ -131,3 +132,95 @@ def test_signature_cannot_contain_markup(driver_a, shipment):
     data = {**proof_for("delivered"), "status": "delivered", "signature": "<script>alert(1)</script>"}
     response = auth(driver_a).post(f"/api/shipments/{shipment.pk}/events/", data, format="multipart")
     assert response.status_code == 400 and "signature" in response.data
+
+
+def deliver(driver, shipment, code=""):
+    move(driver, shipment, "loaded")
+    move(driver, shipment, "in_transit")
+    return move(driver, shipment, "delivered", code=code)
+
+
+@pytest.mark.django_db
+def test_delivery_code_is_shown_to_the_client_only(client_user, driver_a, shipment):
+    assert len(shipment.delivery_code) == 6
+    assert auth(client_user).get(f"/api/shipments/{shipment.pk}/").data["delivery_code"] == shipment.delivery_code
+    assert auth(driver_a).get(f"/api/shipments/{shipment.pk}/").data["delivery_code"] is None
+    assert shipment.delivery_code not in str(auth(driver_a).get(f"/api/shipments/{shipment.pk}/").data)
+
+
+@pytest.mark.django_db
+def test_wrong_delivery_codes_are_counted_then_locked(driver_a, shipment):
+    move(driver_a, shipment, "loaded")
+    move(driver_a, shipment, "in_transit")
+    wrong = "000000" if shipment.delivery_code != "000000" else "111111"
+    for _ in range(5):
+        response = move(driver_a, shipment, "delivered", code=wrong)
+        assert response.status_code == 409 and response.data["code"] == "delivery_code_invalid"
+    shipment.refresh_from_db()
+    assert shipment.delivery_code_attempts == 5 and shipment.status == ShipmentStatus.IN_TRANSIT
+
+    # Même le bon code est refusé : il ne reste que la déclaration sans code.
+    assert move(driver_a, shipment, "delivered", code=shipment.delivery_code).data["code"] == "delivery_code_locked"
+    assert move(driver_a, shipment, "delivered").status_code == 201
+
+
+@pytest.mark.django_db
+def test_delivery_without_code_is_never_auto_confirmed(client_user, driver_a, shipment, admin_user):
+    from apps.notifications.models import Notification
+    from apps.shipments.services import needing_attention
+
+    assert deliver(driver_a, shipment).data["delivered_with_code"] is False
+    assert "sans le code" in Notification.objects.filter(user=client_user, kind="shipment_delivered").get().body
+    Shipment.objects.filter(pk=shipment.pk).update(delivered_at=timezone.now() - timedelta(hours=49))
+
+    call_command("periodic_tasks")
+    shipment.refresh_from_db()
+    assert shipment.status == ShipmentStatus.DELIVERED
+    assert list(needing_attention()) == [shipment]
+    assert auth(admin_user).get("/api/backoffice/dashboard/").data["shipments_attention"] == 1
+    listed = auth(admin_user).get("/api/backoffice/shipments/", {"status": "attention"}).data["results"]
+    assert [s["id"] for s in listed] == [str(shipment.pk)]
+
+
+@pytest.mark.django_db
+def test_correct_code_marks_the_delivery_as_proven(client_user, driver_a, shipment):
+    delivered = deliver(driver_a, shipment, code=shipment.delivery_code)
+    assert delivered.status_code == 201 and delivered.data["delivered_with_code"] is True
+    assert delivered.data["delivery_code"] is None
+
+
+@pytest.mark.django_db
+def test_staff_can_close_a_disputed_shipment(client_user, driver_a, shipment, admin_user):
+    from apps.notifications.models import Notification
+
+    move(driver_a, shipment, "loaded")
+    move(client_user, shipment, "disputed", "Marchandise abîmée au chargement")
+    url = f"/api/backoffice/shipments/{shipment.pk}/resolve/"
+
+    assert auth(client_user).post(url, {"status": "completed", "note": "x"}, format="json").status_code == 403
+    assert auth(admin_user).post(url, {"status": "delivered", "note": "x"}, format="json").status_code == 400
+    assert auth(admin_user).get(f"/api/backoffice/shipments/{shipment.pk}/").data["can_resolve"] is True
+
+    response = auth(admin_user).post(url, {"status": "cancelled", "note": "Accord trouvé avec les deux parties"}, format="json")
+    assert response.status_code == 200 and response.data["status"] == "cancelled"
+    assert response.data["can_resolve"] is False
+    last = shipment.events.last()
+    assert last.actor == admin_user and "Accord trouvé" in last.note
+    assert Notification.objects.filter(kind="shipment_cancelled", user__in=[client_user, driver_a]).count() == 2
+    assert auth(admin_user).post(url, {"status": "completed", "note": "x"}, format="json").data["code"] == "shipment_closed"
+
+
+@pytest.mark.django_db
+def test_shipment_not_loaded_after_the_loading_date_needs_attention(shipment):
+    from apps.shipments.services import needing_attention
+
+    assert not needing_attention().exists()
+    Cargo.objects.filter(pk=shipment.cargo_id).update(loading_date=timezone.localdate() - timedelta(days=2))
+    assert list(needing_attention()) == [shipment]
+
+
+@pytest.fixture
+def admin_user(db):
+    from apps.accounts.models import User
+
+    return User.objects.create_superuser(phone="0699999999", password="Camion-Maroc-2026", full_name="Admin Équipe")

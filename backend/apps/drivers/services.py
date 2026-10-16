@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 
+from apps.common.exceptions import BusinessRuleError
 from apps.notifications.services import notify
 
 from .models import DriverDocument, DriverProfile, VerificationEvent, VerificationStatus
@@ -59,29 +60,59 @@ def checklist(profile: DriverProfile) -> list[dict]:
     return result
 
 
-def expired_required_documents(profile: DriverProfile) -> list[DriverDocument]:
-    """Justificatifs exigés (personnels) dont la date d'expiration est dépassée."""
-    personal = {doc_type for doc_type, _ in REQUIRED_PERSONAL}
-    return [
-        d
-        for d in current_documents(profile).filter(doc_type__in=personal, vehicle__isnull=True)
-        if d.is_expired
-    ]
+def personal_document_problem(profile: DriverProfile) -> tuple[str, str] | None:
+    """
+    (code, message) si un justificatif personnel exigé manque, a été refusé ou a expiré, sinon None.
+    Un profil vérifié peut avoir un justificatif refusé ou expiré après coup : il ne doit plus proposer de tarif.
+    """
+    docs = {(d.doc_type, d.side): d for d in current_documents(profile).filter(vehicle__isnull=True)}
+    for doc_type, side in REQUIRED_PERSONAL:
+        doc = docs.get((doc_type, side))
+        if doc is None:
+            return "document_missing", f"Justificatif manquant : « {D(doc_type).label} ». Ajoutez-le depuis votre profil."
+        if doc.status == VerificationStatus.REJECTED:
+            return (
+                "document_rejected",
+                f"Votre justificatif « {doc.get_doc_type_display()} » a été refusé. Envoyez une version valide depuis votre profil.",
+            )
+        if doc.is_expired:
+            return (
+                "document_expired",
+                f"Votre justificatif « {doc.get_doc_type_display()} » a expiré. Envoyez une version à jour depuis votre profil.",
+            )
+    return None
 
 
-def vehicle_insurance_problem(vehicle) -> str | None:
-    """Raison pour laquelle ce camion ne peut pas être proposé (assurance expirée ou refusée), sinon None."""
-    insurance = (
-        DriverDocument.objects.filter(vehicle=vehicle, doc_type=D.INSURANCE, replaced_at__isnull=True)
-        .order_by("-created_at")
-        .first()
-    )
-    if insurance is None:
-        return None  # justificatifs manquants : c'est la vérification du profil qui le bloque
-    if insurance.status == VerificationStatus.REJECTED:
-        return "L'assurance de ce camion a été refusée. Envoyez une attestation valide."
-    if insurance.is_expired:
-        return "L'assurance de ce camion a expiré. Envoyez une attestation à jour."
+def vehicle_problem(vehicle) -> str | None:
+    """
+    Raison pour laquelle ce camion ne peut pas être proposé, sinon None : sa carte grise et son assurance
+    doivent être vérifiées par l'équipe et à jour. Un camion ajouté après la vérification du profil
+    reste donc inutilisable tant que ses justificatifs n'ont pas été contrôlés.
+    """
+    if not vehicle.is_active:
+        return "Ce camion a été retiré de votre profil."
+    docs = {
+        (d.doc_type, d.side): d
+        for d in DriverDocument.objects.filter(vehicle=vehicle, replaced_at__isnull=True)
+    }
+    required = [docs.get(key) for key in REQUIRED_PER_VEHICLE]
+    if any(d is not None and d.status == VerificationStatus.REJECTED for d in required):
+        return "Un justificatif de ce camion a été refusé. Envoyez une version valide depuis votre profil."
+    if any(d is not None and d.is_expired for d in required):
+        return "Un justificatif de ce camion a expiré (assurance ou carte grise). Envoyez une version à jour."
+    if any(d is None or d.status != VerificationStatus.VERIFIED for d in required):
+        return (
+            "La carte grise et l'assurance de ce camion doivent être vérifiées par notre équipe avant de l'utiliser."
+        )
+    return None
+
+
+def vehicle_fit_problem(vehicle, cargo) -> str | None:
+    """Le camion doit être du type demandé dans l'annonce et pouvoir porter son poids."""
+    if vehicle.truck_type != cargo.truck_type:
+        return "Ce camion n'est pas du type demandé dans l'annonce."
+    if vehicle.capacity_kg < cargo.weight_kg:
+        return "Ce camion ne peut pas porter le poids de cette cargaison."
     return None
 
 
@@ -92,10 +123,17 @@ def add_document(profile: DriverProfile, **fields) -> DriverDocument:
         doc_type=fields["doc_type"], side=fields["side"], vehicle=fields.get("vehicle")
     ).update(replaced_at=timezone.now())
     document = DriverDocument.objects.create(driver=profile, **fields)
-    # Un nouveau justificatif relance la vérification si le profil avait été refusé.
-    if profile.verification_status == VerificationStatus.REJECTED:
+    # Un nouveau justificatif relance la vérification si le profil avait été refusé, et aussi s'il était
+    # vérifié et que le document est personnel (CIN, permis, selfie) : sinon un profil vérifié pourrait
+    # remplacer ses pièces par d'autres sans contrôle. Les documents d'un camion n'ont pas cet effet :
+    # c'est le camion seul qui reste inutilisable tant qu'ils ne sont pas vérifiés (voir `vehicle_problem`).
+    personal = fields.get("vehicle") is None and (fields["doc_type"], fields["side"]) in REQUIRED_PERSONAL
+    if profile.verification_status == VerificationStatus.REJECTED or (
+        personal and profile.verification_status == VerificationStatus.VERIFIED
+    ):
         profile.verification_status = VerificationStatus.PENDING
-        profile.save(update_fields=["verification_status", "updated_at"])
+        profile.verified_at = None
+        profile.save(update_fields=["verification_status", "verified_at", "updated_at"])
     return document
 
 
@@ -129,9 +167,19 @@ def decide_document(document: DriverDocument, status: str, *, by, reason: str = 
     return document
 
 
+def unverified_requirements(profile: DriverProfile) -> list[dict]:
+    """Justificatifs exigés (personnels et camions actifs) qui ne sont pas encore vérifiés et à jour."""
+    return [item for item in checklist(profile) if item["state"] != VerificationStatus.VERIFIED]
+
+
 @transaction.atomic
 def decide_profile(profile: DriverProfile, status: str, *, by, reason: str = "") -> DriverProfile:
     """Décision de l'équipe sur le profil transporteur : historique + notification."""
+    if status == VerificationStatus.VERIFIED and unverified_requirements(profile):
+        raise BusinessRuleError(
+            "Vérifiez d'abord chaque justificatif exigé (pièces personnelles et documents des camions).",
+            code="documents_not_verified",
+        )
     profile.verification_status = status
     profile.verified_at = timezone.now() if status == VerificationStatus.VERIFIED else None
     profile.rejection_reason = reason if status == VerificationStatus.REJECTED else ""

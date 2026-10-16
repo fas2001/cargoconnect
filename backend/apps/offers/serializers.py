@@ -43,6 +43,12 @@ class MyOfferListSerializer(OwnOfferSerializer):
         return CargoListSerializer(offer.cargo, context=self.context).data
 
 
+class AcceptOfferSerializer(serializers.Serializer):
+    """Tarif affiché au client au moment d'accepter : refusé s'il ne correspond plus à l'offre."""
+
+    price = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
 class OfferWriteSerializer(serializers.ModelSerializer):
     vehicle = serializers.PrimaryKeyRelatedField(queryset=Vehicle.objects.none(), required=False, allow_null=True)
 

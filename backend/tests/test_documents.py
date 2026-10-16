@@ -9,8 +9,9 @@ from apps.accounts.models import User
 from apps.drivers import services
 from apps.drivers.models import DocumentAccessLog, DriverDocument, VerificationEvent, VerificationStatus
 from apps.notifications.models import Notification
+from apps.vehicles.models import Vehicle
 
-from .conftest import PASSWORD, auth
+from .conftest import PASSWORD, auth, make_driver, proof_photo, vehicle_for
 
 D = DriverDocument.DocType
 FUTURE = str(timezone.localdate() + timedelta(days=400))
@@ -121,50 +122,106 @@ def test_decisions_are_recorded_and_notified(driver_a):
     assert profile.rejection_reason == "Justificatifs incomplets"
 
 
+def offer(driver_user, cargo, vehicle=None):
+    vehicle = vehicle or vehicle_for(driver_user, cargo)
+    return auth(driver_user).post(f"/api/cargos/{cargo.pk}/offers/", {"price": "5000", "vehicle": str(vehicle.pk)})
+
+
 @pytest.mark.django_db
 def test_expired_documents_block_offers(driver_a, published_cargo):
     profile = driver_a.driver_profile
-    upload(driver_a, doc_type="cin", side="recto", document_number="AB1", expires_on=FUTURE)
     DriverDocument.objects.filter(driver=profile, doc_type=D.CIN).update(expires_on=timezone.localdate() - timedelta(days=1))
 
-    response = auth(driver_a).post(f"/api/cargos/{published_cargo.pk}/offers/", {"price": "5000"})
+    response = offer(driver_a, published_cargo)
     assert response.status_code == 409
     assert response.data["code"] == "document_expired"
 
 
 @pytest.mark.django_db
-def test_vehicle_with_expired_insurance_cannot_be_offered(driver_a, published_cargo):
-    vehicle = driver_a.driver_profile.vehicles.first()
-    upload(
-        driver_a,
-        doc_type="assurance",
-        vehicle=str(vehicle.pk),
-        document_number="P-1",
-        expires_on=FUTURE,
-        issuer="Wafa Assurance",
-        covers_goods="false",
+def test_rejected_personal_document_blocks_offers_even_on_a_verified_profile(driver_a, published_cargo):
+    DriverDocument.objects.filter(driver=driver_a.driver_profile, doc_type=D.LICENSE, side="verso").update(
+        status=VerificationStatus.REJECTED
     )
-    DriverDocument.objects.filter(vehicle=vehicle).update(expires_on=timezone.localdate() - timedelta(days=1))
-
-    response = auth(driver_a).post(
-        f"/api/cargos/{published_cargo.pk}/offers/", {"price": "5000", "vehicle": str(vehicle.pk)}
-    )
-    assert response.status_code == 409
-    assert response.data["code"] == "vehicle_insurance"
+    response = offer(driver_a, published_cargo)
+    assert response.status_code == 409 and response.data["code"] == "document_rejected"
 
 
 @pytest.mark.django_db
-def test_checklist_and_expiry_reminders_are_sent_once(driver_a):
+def test_replacing_a_personal_document_sends_a_verified_profile_back_to_review(driver_a, published_cargo):
     profile = driver_a.driver_profile
+    upload(driver_a, doc_type="cin", side="recto", document_number="ZZ999999", expires_on=FUTURE)
+    profile.refresh_from_db()
+    assert profile.verification_status == VerificationStatus.PENDING
+    assert offer(driver_a, published_cargo).data["code"] == "driver_not_verified"
+
+
+@pytest.mark.django_db
+def test_vehicle_with_expired_insurance_cannot_be_offered(driver_a, published_cargo):
+    vehicle = vehicle_for(driver_a, published_cargo)
+    DriverDocument.objects.filter(vehicle=vehicle, doc_type=D.INSURANCE).update(
+        expires_on=timezone.localdate() - timedelta(days=1)
+    )
+    response = offer(driver_a, published_cargo, vehicle)
+    assert response.status_code == 409
+    assert response.data["code"] == "vehicle_documents"
+
+
+@pytest.mark.django_db
+def test_new_truck_needs_verified_documents_before_use(driver_a, published_cargo):
+    """Un profil vérifié ne suffit pas : un camion ajouté ensuite doit avoir ses propres justificatifs validés."""
+    profile = driver_a.driver_profile
+    profile.vehicles.update(is_active=False)
+    new_truck = Vehicle.objects.create(
+        driver=profile, truck_type=published_cargo.truck_type, capacity_kg=9000, registration_number="NEW-1"
+    )
+    assert offer(driver_a, published_cargo, new_truck).data["code"] == "vehicle_documents"
+
+    upload(
+        driver_a,
+        doc_type="assurance",
+        vehicle=str(new_truck.pk),
+        document_number="P-9",
+        expires_on=FUTURE,
+        issuer="Wafa Assurance",
+        covers_goods="true",
+    )
+    assert offer(driver_a, published_cargo, new_truck).data["code"] == "vehicle_documents"  # pas encore vérifiée
+
+    DriverDocument.objects.filter(vehicle=new_truck).delete()
+    for doc_type, side in services.REQUIRED_PER_VEHICLE:
+        DriverDocument.objects.create(
+            driver=profile, vehicle=new_truck, doc_type=doc_type, side=side, file=proof_photo(), status=VerificationStatus.VERIFIED
+        )
+    assert offer(driver_a, published_cargo, new_truck).status_code == 201
+
+
+@pytest.mark.django_db
+def test_truck_must_match_the_cargo_type_and_weight(driver_a, published_cargo):
+    wrong_type = driver_a.driver_profile.vehicles.exclude(truck_type=published_cargo.truck_type).first()
+    response = offer(driver_a, published_cargo, wrong_type)
+    assert response.status_code == 409 and response.data["code"] == "vehicle_unsuitable"
+
+    Vehicle.objects.filter(pk=vehicle_for(driver_a, published_cargo).pk).update(capacity_kg=published_cargo.weight_kg - 1)
+    response = offer(driver_a, published_cargo)
+    assert response.status_code == 409 and response.data["code"] == "vehicle_unsuitable"
+
+    no_vehicle = auth(driver_a).post(f"/api/cargos/{published_cargo.pk}/offers/", {"price": "5000"})
+    assert no_vehicle.status_code == 409 and no_vehicle.data["code"] == "vehicle_required"
+
+
+@pytest.mark.django_db
+def test_checklist_and_expiry_reminders_are_sent_once():
+    rookie = make_driver("0688888888", verified=False)
+    profile = rookie.driver_profile
     states = {(i["doc_type"], i["side"]): i["state"] for i in services.checklist(profile)}
     assert states[("cin", "recto")] == "missing"
     assert ("carte_grise", "recto") in states  # un camion actif : ses justificatifs sont exigés
 
     soon = str(timezone.localdate() + timedelta(days=10))
-    upload(driver_a, doc_type="permis", side="recto", document_number="P123", expires_on=soon)
+    upload(rookie, doc_type="permis", side="recto", document_number="P123", expires_on=soon)
     assert services.notify_expiring_documents() == 1
     assert services.notify_expiring_documents() == 0  # pas de doublon si la tâche repasse
-    assert Notification.objects.filter(user=driver_a, kind="document_expiring").count() == 1
+    assert Notification.objects.filter(user=rookie, kind="document_expiring").count() == 1
 
 
 @pytest.mark.django_db

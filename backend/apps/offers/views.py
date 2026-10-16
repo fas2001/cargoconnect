@@ -9,7 +9,13 @@ from apps.shipments.serializers import ShipmentSerializer
 
 from . import services
 from .models import Offer
-from .serializers import MyOfferListSerializer, OfferSerializer, OfferWriteSerializer, OwnOfferSerializer
+from .serializers import (
+    AcceptOfferSerializer,
+    MyOfferListSerializer,
+    OfferSerializer,
+    OfferWriteSerializer,
+    OwnOfferSerializer,
+)
 
 
 class OfferViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
@@ -84,11 +90,13 @@ class OfferViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.
             raise PermissionDenied("Seul l'auteur de l'annonce peut refuser une proposition.")
         return Response(OfferSerializer(services.reject_offer(offer), context=self.get_serializer_context()).data)
 
-    @extend_schema(request=None, responses={201: ShipmentSerializer})
+    @extend_schema(request=AcceptOfferSerializer, responses={201: ShipmentSerializer})
     @action(detail=True, methods=["post"])
     def accept(self, request, pk=None):
         offer = self.get_object()
         if offer.cargo.client_id != request.user.pk:
             raise PermissionDenied("Seul l'auteur de l'annonce peut accepter une proposition.")
-        shipment = services.accept_offer(offer=offer, user=request.user)
+        serializer = AcceptOfferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        shipment = services.accept_offer(offer=offer, user=request.user, expected_price=serializer.validated_data["price"])
         return Response(ShipmentSerializer(shipment, context=self.get_serializer_context()).data, status=status.HTTP_201_CREATED)
