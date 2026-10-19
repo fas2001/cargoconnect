@@ -86,6 +86,13 @@ profil vérifié, justificatifs et camion valides), sinon `409 driver_unavailabl
 - Les justificatifs sont téléversés dans `private/` et ne sont consultables que dans l'administration.
 - Les codes de vérification (envoyés par WhatsApp) sont hachés, valables 10 minutes et limités à 5 tentatives. La demande de code répond
   de la même façon que le numéro existe ou non, ce qui empêche d'énumérer les comptes.
+- Un code n'est envoyé qu'à un compte existant (et non vérifié, pour la vérification du numéro), au plus
+  3 fois par heure et par numéro, à 60 s d'intervalle au moins (`OTP_MAX_PER_PHONE_PER_HOUR`,
+  `OTP_RESEND_DELAY_SECONDS`), quelle que soit l'adresse IP : chaque message est facturé.
+- **Suppression du compte** (`DELETE /api/me/`, mot de passe exigé) : nom, téléphone, e-mail, photo, pièces
+  d'identité, justificatifs et notifications sont effacés ; le numéro redevient libre. Les transports
+  terminés restent, anonymisés (« Compte supprimé »), car ils sont aussi l'historique de l'autre partie.
+  Impossible tant qu'un transport est ouvert.
 
 ## Autres règles
 
@@ -99,7 +106,11 @@ profil vérifié, justificatifs et camion valides), sinon `409 driver_unavailabl
   du profil reste donc inutilisable tant que ses justificatifs n'ont pas été contrôlés.
 - Ces contrôles sont refaits à l'envoi, à la modification et à l'acceptation d'une offre.
 - Il ne peut pas proposer de tarif sur sa propre annonce, et n'a qu'une offre en attente par annonce.
-- Suspendre un compte (ou le fermer soi-même) retire ses offres en attente, annule ses annonces ouvertes
+  Une offre refusée par le client l'empêche de proposer de nouveau sur cette annonce (un simple retrait, non).
+- Les clients voient, pour chaque offre, le nombre de transports réalisés et le nombre de transports
+  confirmés que le chauffeur a lui-même annulés.
+- Toute annonce visible peut être signalée (sauf la sienne) ; la personne signalée est déduite par le serveur.
+- Suspendre un compte (ou le supprimer) retire ses offres en attente, annule ses annonces ouvertes
   (les chauffeurs concernés sont prévenus) et déconnecte tous ses appareils. Ses transports en cours
   restent à suivre par l'équipe : leur nombre est renvoyé (`open_shipments`).
 - Une annonce expire le lendemain de la date de chargement (`periodic_tasks`).

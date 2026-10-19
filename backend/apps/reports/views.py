@@ -1,5 +1,7 @@
 from rest_framework import mixins, serializers, viewsets
 
+from apps.cargos.models import CargoStatus
+
 from .models import Report
 
 
@@ -18,6 +20,12 @@ class ReportSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Indiquez l'annonce ou le transport concerné.")
         if shipment and user.pk not in (shipment.client_id, shipment.driver.user_id):
             raise serializers.ValidationError({"shipment": "Vous ne participez pas à ce transport."})
+        if cargo and not shipment:
+            # Seulement une annonce que l'on peut voir (publiée, ou sur laquelle on a proposé un tarif),
+            # et pas la sienne.
+            offered = user.is_driver and cargo.offers.filter(driver=user.driver_profile).exists()
+            if cargo.client_id == user.pk or not (cargo.status == CargoStatus.PUBLISHED or offered):
+                raise serializers.ValidationError({"cargo": "Vous ne pouvez pas signaler cette annonce."})
         # Personne signalée déduite du contexte, jamais fournie par le client.
         if shipment:
             attrs["reported_user"] = shipment.driver.user if user.pk == shipment.client_id else shipment.client

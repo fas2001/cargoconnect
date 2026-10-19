@@ -5,15 +5,15 @@ import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Route } from '@/components/cargo-card';
-import { OptionPicker } from '@/components/option-picker';
 import { ProofSheet } from '@/components/proof-sheet';
+import { ReportLink } from '@/components/report-link';
 import { ReasonDialog } from '@/components/reason-dialog';
 import { EventProof } from '@/components/event-proof';
 import { ShipmentStatusBadge } from '@/components/status-badge';
 import { Banner, Button, Card, ErrorState, InfoRow, Loading, Screen, SectionTitle, TextField, textStyles } from '@/components/ui';
 import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { localName, t, tr } from '@/i18n';
-import { reportReasons, shipmentActionLabel, shipmentStatusLabel } from '@/i18n/labels';
+import { shipmentActionLabel, shipmentStatusLabel } from '@/i18n/labels';
 import { errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import type { Contact, Shipment, ShipmentProof, ShipmentStatus } from '@/types/api';
@@ -167,7 +167,7 @@ export default function ShipmentScreen() {
       {problemActions.map((a) => (
         <Button key={a.status} title={shipmentActionLabel(a.status) || tr(a.label)} variant="danger" onPress={() => onAction(a.status, true)} />
       ))}
-      <ReportLink shipment={shipment} />
+      <ReportLink shipment={shipment.id} />
 
       <ReasonDialog
         visible={reasonFor !== null}
@@ -270,40 +270,6 @@ function ReviewForm({ shipment }: { shipment: Shipment }) {
       <TextField label={t('Commentaire (facultatif)')} multiline value={comment} onChangeText={setComment} maxLength={500} />
       {error ? <Banner tone="danger" message={error} /> : null}
       <Button title={t('Envoyer mon avis')} disabled={!rating} loading={loading} onPress={submit} />
-    </Card>
-  );
-}
-
-function ReportLink({ shipment }: { shipment: Shipment }) {
-  const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState<string | null>(null);
-  const [description, setDescription] = useState('');
-  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
-  const [error, setError] = useState<string | null>(null);
-
-  if (state === 'sent') return <Banner tone="success" message={t("Signalement envoyé. Notre équipe va l'examiner.")} />;
-  if (!open) return <Button title={t('Signaler à CargoConnect')} variant="ghost" icon="flag-outline" onPress={() => setOpen(true)} />;
-
-  const submit = async () => {
-    setError(null);
-    setState('sending');
-    try {
-      await api.report({ reason: reason!, description, shipment: shipment.id });
-      setState('sent');
-    } catch (e) {
-      setError(errorMessage(e));
-      setState('idle');
-    }
-  };
-
-  return (
-    <Card>
-      <Text style={styles.name}>{t('Signaler un problème')}</Text>
-      <OptionPicker label={t('Motif')} placeholder={t('Choisir')} options={reportReasons()} value={reason} onChange={setReason} />
-      <TextField label={t('Description')} multiline value={description} onChangeText={setDescription} maxLength={2000} />
-      {error ? <Banner tone="danger" message={error} /> : null}
-      <Button title={t('Envoyer')} variant="danger" disabled={!reason || !description.trim()} loading={state === 'sending'} onPress={submit} />
-      <Button title={t('Annuler')} variant="ghost" onPress={() => setOpen(false)} />
     </Card>
   );
 }

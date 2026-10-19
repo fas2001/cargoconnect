@@ -178,3 +178,43 @@ def test_editing_an_offer_rechecks_the_truck(driver_a, published_cargo):
     wrong_type = driver_a.driver_profile.vehicles.exclude(truck_type=published_cargo.truck_type).first()
     response = auth(driver_a).patch(f"/api/offers/{offer['id']}/", {"vehicle": str(wrong_type.pk)})
     assert response.status_code == 409 and response.data["code"] == "vehicle_unsuitable"
+
+
+@pytest.mark.django_db
+def test_a_rejected_driver_cannot_bid_again_on_the_same_cargo(client_user, driver_a, published_cargo):
+    offer = offer_on(published_cargo, driver_a, "5000")
+    assert auth(client_user).post(f"/api/offers/{offer['id']}/reject/").status_code == 200
+
+    vehicle = str(vehicle_for(driver_a, published_cargo).pk)
+    again = auth(driver_a).post(f"/api/cargos/{published_cargo.pk}/offers/", {"price": "4000", "vehicle": vehicle})
+    assert again.status_code == 409 and again.data["code"] == "offer_rejected"
+
+
+def another_cargo_like(cargo):
+    """Nouvelle annonce publiée, identique à `cargo`."""
+    import uuid
+
+    from apps.cargos.models import Cargo, CargoStatus
+    from apps.cargos.services import publish_cargo
+
+    clone = Cargo.objects.get(pk=cargo.pk)
+    clone.id, clone.status, clone.published_at, clone.expires_at = uuid.uuid4(), CargoStatus.DRAFT, None, None
+    clone._state.adding = True
+    clone.save()
+    return publish_cargo(clone)
+
+
+@pytest.mark.django_db
+def test_clients_see_how_many_shipments_a_driver_cancelled(client_user, driver_a, published_cargo):
+    def cancel(user, shipment, note):
+        response = auth(user).post(f"/api/shipments/{shipment['id']}/events/", {"status": "cancelled", "note": note})
+        assert response.status_code == 201
+
+    cancel(driver_a, accept(client_user, offer_on(published_cargo, driver_a)).data, "Camion en panne")
+    # Annulation par le client : ne compte pas contre le chauffeur.
+    cancel(client_user, accept(client_user, offer_on(another_cargo_like(published_cargo), driver_a)).data, "Plus besoin")
+
+    third = another_cargo_like(published_cargo)
+    offer_on(third, driver_a)
+    seen = auth(client_user).get(f"/api/cargos/{third.pk}/offers/").data[0]["driver"]
+    assert seen["cancelled_shipments"] == 1 and seen["completed_shipments"] == 0

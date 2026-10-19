@@ -128,3 +128,19 @@ def test_declared_value_and_declaration_are_required_and_private(client_user, dr
     # Un chauffeur qui consulte l'annonce ne voit ni la valeur ni le destinataire.
     seen = auth(driver_a).get(f"/api/cargos/{created.data['id']}/").data
     assert "declared_value" not in seen and "recipient_phone" not in seen
+
+
+@pytest.mark.django_db
+def test_report_a_listing(client_user, driver_a, published_cargo):
+    from apps.reports.models import Report
+
+    report = {"reason": "inaccurate", "description": "Le poids indiqué est faux", "cargo": str(published_cargo.pk)}
+    response = auth(driver_a).post("/api/reports/", report)
+    assert response.status_code == 201
+    assert Report.objects.get().reported_user == client_user
+
+    # Pas sa propre annonce, ni une annonce qu'on ne peut pas voir.
+    assert auth(client_user).post("/api/reports/", report).status_code == 400
+    published_cargo.status = "draft"
+    published_cargo.save()
+    assert auth(driver_a).post("/api/reports/", report).status_code == 400

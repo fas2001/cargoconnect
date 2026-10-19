@@ -515,7 +515,25 @@ export const ar = {
   'CargoConnect : votre code de livraison est {code}. Donnez-le au chauffeur uniquement à la réception de la marchandise.':
     'CargoConnect: رمز التسليم الخاص بك هو {code}. أعطه للسائق فقط عند استلام البضاعة.',
 
+  // --- Signalement d'annonce, suppression du compte, annulations --------------
+  'Signaler cette annonce': 'الإبلاغ عن هذا الإعلان',
+  'Le client a refusé votre proposition pour cette annonce.': 'رفض الزبون عرضك لهذا الإعلان.',
+  '{count} transport(s) annulé(s) par ce transporteur': '{count} عملية نقل ألغاها هذا الناقل',
+  'Supprimer mon compte': 'حذف حسابي',
+  'Supprimer définitivement': 'حذف نهائي',
+  'Supprimer définitivement votre compte ?': 'حذف حسابك نهائيًا؟',
+  'Cette action est irréversible.': 'لا يمكن التراجع عن هذا الإجراء.',
+  Supprimer: 'حذف',
+  "Votre nom, votre numéro, votre photo, vos pièces d'identité et vos justificatifs seront effacés, et vos annonces ouvertes annulées. Les transports terminés restent, de façon anonyme, dans l'historique de l'autre partie. Vous pourrez vous réinscrire plus tard avec le même numéro.":
+    'سيتم مسح اسمك ورقمك وصورتك ووثائق هويتك ومستنداتك، وإلغاء إعلاناتك المفتوحة. تبقى عمليات النقل المنتهية، بشكل مجهول الهوية، في سجل الطرف الآخر. يمكنك التسجيل مجددًا لاحقًا بنفس الرقم.',
+
   // Textes du serveur (voir `tr`)
+  'Mot de passe incorrect.': 'كلمة المرور غير صحيحة.',
+  "Impossible de supprimer le compte tant qu'un transport est en cours. Terminez-le ou contactez l'équipe.":
+    'لا يمكن حذف الحساب ما دامت هناك عملية نقل جارية. أنهِها أو تواصل مع الفريق.',
+  'Le client a refusé votre proposition pour cette annonce : vous ne pouvez plus en envoyer.':
+    'رفض الزبون عرضك لهذا الإعلان: لم يعد بإمكانك إرسال عرض آخر.',
+  'Vous ne pouvez pas signaler cette annonce.': 'لا يمكنك الإبلاغ عن هذا الإعلان.',
   'Choisissez le camion qui fera ce transport.': 'اختر الشاحنة التي ستقوم بهذا النقل.',
   "Ce camion n'est pas du type demandé dans l'annonce.": 'هذه الشاحنة ليست من النوع المطلوب في الإعلان.',
   'Ce camion ne peut pas porter le poids de cette cargaison.': 'لا تستطيع هذه الشاحنة حمل وزن هذه البضاعة.',

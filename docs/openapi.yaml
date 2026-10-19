@@ -1061,8 +1061,9 @@ paths:
   /api/me/:
     get:
       operationId: me_retrieve
-      description: 'GET/PATCH : profil. DELETE : désactivation du compte (les données
-        restent pour l''historique).'
+      description: |-
+        GET/PATCH : profil. DELETE : suppression définitive du compte (mot de passe exigé) ; les données
+        personnelles sont effacées, les transports terminés restent anonymisés (voir `services.delete_account`).
       tags:
       - me
       security:
@@ -1076,8 +1077,9 @@ paths:
           description: ''
     patch:
       operationId: me_partial_update
-      description: 'GET/PATCH : profil. DELETE : désactivation du compte (les données
-        restent pour l''historique).'
+      description: |-
+        GET/PATCH : profil. DELETE : suppression définitive du compte (mot de passe exigé) ; les données
+        personnelles sont effacées, les transports terminés restent anonymisés (voir `services.delete_account`).
       tags:
       - me
       requestBody:
@@ -1102,8 +1104,9 @@ paths:
           description: ''
     delete:
       operationId: me_destroy
-      description: 'GET/PATCH : profil. DELETE : désactivation du compte (les données
-        restent pour l''historique).'
+      description: |-
+        GET/PATCH : profil. DELETE : suppression définitive du compte (mot de passe exigé) ; les données
+        personnelles sont effacées, les transports terminés restent anonymisés (voir `services.delete_account`).
       tags:
       - me
       security:
@@ -4329,7 +4332,12 @@ components:
           type: string
           readOnly: true
         completed_shipments:
-          type: string
+          type: integer
+          readOnly: true
+        cancelled_shipments:
+          type: integer
+          description: Transports confirmés que le chauffeur a lui-même annulés (pas
+            ceux annulés par le client ou l'équipe).
           readOnly: true
         created_at:
           type: string
@@ -4338,6 +4346,7 @@ components:
           title: Créé le
       required:
       - avatar
+      - cancelled_shipments
       - completed_shipments
       - created_at
       - id

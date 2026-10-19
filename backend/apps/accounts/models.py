@@ -58,6 +58,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField("actif", default=True)
     is_staff = models.BooleanField("équipe", default=False)
     date_joined = models.DateTimeField("inscrit le", default=timezone.now)
+    # Compte supprimé à la demande de son titulaire : données personnelles effacées (voir `delete_account`).
+    deleted_at = models.DateTimeField("supprimé le", null=True, blank=True)
 
     objects = UserManager()
 

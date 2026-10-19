@@ -155,6 +155,8 @@ export type PublicDriver = {
   is_verified: boolean;
   rating: Rating;
   completed_shipments: number;
+  /** Transports confirmés que le chauffeur a lui-même annulés. */
+  cancelled_shipments: number;
   created_at: string;
 };
 

@@ -96,9 +96,43 @@ def test_otp_request_for_unknown_phone_does_not_leak(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_deactivate_account(client_user):
-    assert auth(client_user).delete("/api/me/").status_code == 204
-    assert not User.objects.get(pk=client_user.pk).is_active
+def test_delete_account_erases_personal_data_and_frees_the_phone(client_user, django_capture_on_commit_callbacks):
+    from pathlib import Path
+
+    from apps.accounts.models import ClientIdentity
+
+    api = auth(client_user)
+    api.patch("/api/me/", {"avatar": proof_photo("moi.jpg")}, format="multipart")
+    client_user.refresh_from_db()
+    files = [Path(client_user.avatar.path)] + [Path(d.file.path) for d in client_user.client_identity.documents.all()]
+    assert all(f.exists() for f in files)
+
+    assert api.delete("/api/me/", {"password": "mauvais"}, format="json").status_code == 400
+    with django_capture_on_commit_callbacks(execute=True):
+        assert api.delete("/api/me/", {"password": PASSWORD}, format="json").status_code == 204
+
+    deleted = User.objects.get(pk=client_user.pk)
+    assert not deleted.is_active and deleted.deleted_at is not None
+    assert deleted.full_name == "Compte supprimé" and deleted.email == "" and not deleted.avatar
+    assert deleted.phone.startswith("del-") and not deleted.has_usable_password()
+    assert not ClientIdentity.objects.filter(user=deleted).exists()
+    assert not any(f.exists() for f in files)  # photo et pièces d'identité effacées du disque
+
+    # Le numéro est libéré : la personne peut se réinscrire.
+    again = APIClient().post(
+        "/api/auth/register/", {"phone": "0611111111", "full_name": "Karim Retour", "password": "Camion-Maroc-2026"}
+    )
+    assert again.status_code == 201
+
+
+@pytest.mark.django_db
+def test_account_with_an_open_shipment_cannot_be_deleted(client_user, driver_a, published_cargo):
+    from .conftest import accept, offer_on
+
+    accept(client_user, offer_on(published_cargo, driver_a))
+    for user in (client_user, driver_a):
+        response = auth(user).delete("/api/me/", {"password": PASSWORD}, format="json")
+        assert response.status_code == 409 and response.data["code"] == "active_shipments"
 
 
 @pytest.mark.django_db
@@ -164,3 +198,44 @@ def test_wrong_codes_are_counted_so_a_reset_code_cannot_be_guessed(client_user, 
     assert ok.status_code == 409
     client_user.refresh_from_db()
     assert client_user.check_password(PASSWORD)
+
+
+
+@pytest.mark.django_db
+def test_codes_are_limited_per_phone_whatever_the_ip(client_user, monkeypatch):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    sent = []
+    monkeypatch.setattr("apps.accounts.services.deliver_code", lambda phone, code: sent.append(code))
+    phone = "+212611111111"
+
+    services.request_otp(phone=phone, purpose="reset_password")
+    services.request_otp(phone=phone, purpose="reset_password")  # renvoi immédiat : ignoré
+    assert len(sent) == 1
+
+    for _ in range(5):
+        PhoneOTP.objects.update(created_at=timezone.now() - timedelta(minutes=5))  # au-delà du délai de renvoi
+        services.request_otp(phone=phone, purpose="reset_password")
+    assert len(sent) == 3  # 3 par heure au plus
+
+    PhoneOTP.objects.update(created_at=timezone.now() - timedelta(hours=2))
+    services.request_otp(phone=phone, purpose="reset_password")
+    assert len(sent) == 4  # l'heure suivante, de nouveau possible
+
+
+@pytest.mark.django_db
+def test_verification_codes_only_go_to_unverified_accounts(client_user, monkeypatch):
+    sent = []
+    monkeypatch.setattr("apps.accounts.services.deliver_code", lambda phone, code: sent.append(phone))
+
+    services.request_otp(phone="+212700000000", purpose="verify_phone")  # aucun compte : rien n'est envoyé
+    assert sent == []
+    services.request_otp(phone="+212611111111", purpose="verify_phone")
+    assert sent == ["+212611111111"]
+
+    User.objects.filter(pk=client_user.pk).update(phone_verified=True)
+    PhoneOTP.objects.all().delete()
+    services.request_otp(phone="+212611111111", purpose="verify_phone")  # déjà vérifié
+    assert sent == ["+212611111111"]

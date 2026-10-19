@@ -7,6 +7,7 @@ import { t } from '@/i18n';
 import { ApiError, errorMessage } from '@/services/api';
 import { api } from '@/services/endpoints';
 import { tokenStorage } from '@/services/token-storage';
+import { confirmAction } from '@/utils/confirm';
 
 /** Mon compte : nom, e-mail et mot de passe. Le numéro de téléphone sert d'identifiant et ne se modifie pas ici. */
 export default function Account() {
@@ -14,6 +15,7 @@ export default function Account() {
     <Screen edges={['bottom']}>
       <PersonalInfo />
       <PasswordChange />
+      <DeleteAccount />
     </Screen>
   );
 }
@@ -61,6 +63,51 @@ function PersonalInfo() {
       <TextField label={t('Numéro de téléphone')} value={user.phone} editable={false} hint={t('Il sert à vous connecter et ne peut pas être modifié ici.')} />
       {message ? <Banner tone={message.tone} message={message.text} /> : null}
       <Button title={t('Enregistrer')} onPress={save} loading={saving} disabled={!changed || !fullName.trim()} />
+    </Card>
+  );
+}
+
+/** Suppression définitive : exigée par l'App Store. Le mot de passe protège d'une suppression par un tiers. */
+function DeleteAccount() {
+  const auth = useAuth();
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  if (!open) {
+    return <Button title={t('Supprimer mon compte')} variant="ghost" icon="trash-outline" onPress={() => setOpen(true)} />;
+  }
+
+  const remove = async () => {
+    const ok = await confirmAction(
+      t('Supprimer définitivement votre compte ?'),
+      t('Cette action est irréversible.'),
+      t('Supprimer'),
+    );
+    if (!ok) return;
+    setError(null);
+    setDeleting(true);
+    try {
+      await api.deleteAccount(password);
+      await auth.forgetSession();
+    } catch (e) {
+      if (e instanceof ApiError && e.fieldErrors.password) setError(e.fieldErrors.password);
+      else setError(errorMessage(e));
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <Card>
+      <Text style={textStyles.title}>{t('Supprimer mon compte')}</Text>
+      <Text style={textStyles.secondary}>
+        {t("Votre nom, votre numéro, votre photo, vos pièces d'identité et vos justificatifs seront effacés, et vos annonces ouvertes annulées. Les transports terminés restent, de façon anonyme, dans l'historique de l'autre partie. Vous pourrez vous réinscrire plus tard avec le même numéro.")}
+      </Text>
+      <TextField label={t('Mot de passe')} secureTextEntry autoComplete="current-password" value={password} onChangeText={setPassword} />
+      {error ? <Banner tone="danger" message={error} /> : null}
+      <Button title={t('Supprimer définitivement')} variant="danger" onPress={remove} loading={deleting} disabled={!password} />
+      <Button title={t('Annuler')} variant="ghost" onPress={() => setOpen(false)} disabled={deleting} />
     </Card>
   );
 }

@@ -8,7 +8,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.common.exceptions import BusinessRuleError
-from apps.shipments.models import Shipment, ShipmentStatus
 
 from . import identity as identity_services
 from . import services
@@ -17,6 +16,7 @@ from .serializers import (
     ChangePasswordSerializer,
     ClientDocumentSerializer,
     ClientIdentitySerializer,
+    DeleteAccountSerializer,
     LogoutSerializer,
     MeSerializer,
     OTPRequestSerializer,
@@ -27,8 +27,6 @@ from .serializers import (
     TokenPairSerializer,
     tokens_for,
 )
-
-ACTIVE_SHIPMENT_STATUSES = [ShipmentStatus.CONFIRMED, ShipmentStatus.LOADED, ShipmentStatus.IN_TRANSIT]
 
 
 class RegisterView(generics.CreateAPIView):
@@ -57,7 +55,10 @@ class LogoutView(APIView):
 
 
 class MeView(generics.RetrieveUpdateDestroyAPIView):
-    """GET/PATCH : profil. DELETE : désactivation du compte (les données restent pour l'historique)."""
+    """
+    GET/PATCH : profil. DELETE : suppression définitive du compte (mot de passe exigé) ; les données
+    personnelles sont effacées, les transports terminés restent anonymisés (voir `services.delete_account`).
+    """
 
     serializer_class = MeSerializer
     http_method_names = ["get", "patch", "delete"]
@@ -67,13 +68,12 @@ class MeView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         return self.request.user
 
-    def perform_destroy(self, user):
-        active = Shipment.objects.filter(status__in=ACTIVE_SHIPMENT_STATUSES)
-        if active.filter(client=user).exists() or active.filter(driver__user=user).exists():
-            raise BusinessRuleError(
-                "Impossible de désactiver le compte tant qu'un transport est en cours.", code="active_shipments"
-            )
-        services.deactivate_user(user, reason="Compte fermé par son titulaire.")
+    @extend_schema(request=DeleteAccountSerializer, responses={204: None})
+    def destroy(self, request, *args, **kwargs):
+        serializer = DeleteAccountSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        services.delete_account(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ChangePasswordView(APIView):
