@@ -19,6 +19,8 @@ type AuthContextValue = AuthState & {
   unlock: (prompt: string) => Promise<boolean>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  /** Oublie tout sur ce téléphone, y compris la session protégée par empreinte (après suppression du compte). */
+  forgetSession: () => Promise<void>;
   refreshUser: () => Promise<User | null>;
 };
 
@@ -105,6 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         const refresh = await tokenStorage.getRefresh();
         if (refresh) await api.logout(refresh).catch(() => undefined);
+        await signOutLocally();
+      },
+      forgetSession: async () => {
+        await tokenStorage.setRememberedPhone(null);
         await signOutLocally();
       },
       refreshUser: async () => {

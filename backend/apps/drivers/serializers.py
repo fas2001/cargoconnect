@@ -142,15 +142,35 @@ class PublicDriverSerializer(serializers.ModelSerializer):
     is_verified = serializers.BooleanField(read_only=True)
     rating = serializers.SerializerMethodField()
     completed_shipments = serializers.SerializerMethodField()
+    cancelled_shipments = serializers.SerializerMethodField()
 
     class Meta:
         model = DriverProfile
-        fields = ["id", "name", "avatar", "company_name", "bio", "is_verified", "rating", "completed_shipments", "created_at"]
+        fields = [
+            "id",
+            "name",
+            "avatar",
+            "company_name",
+            "bio",
+            "is_verified",
+            "rating",
+            "completed_shipments",
+            "cancelled_shipments",
+            "created_at",
+        ]
 
     def get_rating(self, profile):
         from apps.reviews.services import rating_summary
 
         return rating_summary(profile.user, "driver")
 
-    def get_completed_shipments(self, profile):
+    def get_completed_shipments(self, profile) -> int:
         return profile.shipments.filter(status="completed").count()
+
+    def get_cancelled_shipments(self, profile) -> int:
+        """Transports confirmés que le chauffeur a lui-même annulés (pas ceux annulés par le client ou l'équipe)."""
+        from apps.shipments.models import ShipmentEvent, ShipmentStatus
+
+        return ShipmentEvent.objects.filter(
+            shipment__driver=profile, to_status=ShipmentStatus.CANCELLED, actor=profile.user
+        ).count()

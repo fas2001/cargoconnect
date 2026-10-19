@@ -9,6 +9,7 @@ import { Avatar } from '@/components/avatar';
 import { Route } from '@/components/cargo-card';
 import { OptionPicker } from '@/components/option-picker';
 import { ReasonDialog } from '@/components/reason-dialog';
+import { ReportLink } from '@/components/report-link';
 import { CargoStatusBadge, OfferStatusBadge } from '@/components/status-badge';
 import { Banner, Button, Card, ErrorState, InfoRow, Loading, Screen, SectionTitle, TextField, textStyles } from '@/components/ui';
 import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
@@ -32,6 +33,7 @@ export default function CargoScreen() {
     <Screen edges={['bottom']} refreshing={query.isRefetching} onRefresh={() => query.refetch()}>
       <CargoSummaryCard cargo={cargo} />
       {cargo.is_mine ? <OwnerSection cargo={cargo} /> : <DriverSection cargo={cargo} />}
+      {!cargo.is_mine ? <ReportLink cargo={cargo.id} /> : null}
     </Screen>
   );
 }
@@ -225,6 +227,9 @@ function OfferCard({ offer, busy, onAccept, onReject }: { offer: ClientOffer; bu
       <Text style={textStyles.secondary}>
         {d.rating.average ? t('★ {average}/5 ({count} avis)', { average: d.rating.average, count: d.rating.count }) : t('Nouveau transporteur')} · {t('{count} transport(s) réalisé(s)', { count: d.completed_shipments })}
       </Text>
+      {d.cancelled_shipments > 0 ? (
+        <Text style={styles.cancellations}>{t('{count} transport(s) annulé(s) par ce transporteur', { count: d.cancelled_shipments })}</Text>
+      ) : null}
       {offer.vehicle ? (
         <Text style={textStyles.secondary}>
           {tr(offer.vehicle.truck_type_label)} · {t('{weight} de capacité', { weight: formatWeight(offer.vehicle.capacity_kg) })}
@@ -259,6 +264,10 @@ function DriverSection({ cargo }: { cargo: CargoDetail }) {
     return <Banner message={t('Seuls les comptes transporteurs peuvent proposer un tarif.')} />;
   }
   if (offer && offer.status === 'pending') return <PendingOffer cargo={cargo} offer={offer} />;
+  // Un refus du client est définitif pour cette annonce (le serveur refuse toute nouvelle proposition).
+  if (offer && offer.status === 'rejected') {
+    return <Banner tone="warning" message={t('Le client a refusé votre proposition pour cette annonce.')} />;
+  }
   if (cargo.status !== 'published') {
     return <Banner tone="warning" message={t("Cette annonce n'accepte plus de propositions.")} />;
   }
@@ -404,6 +413,7 @@ const styles = StyleSheet.create({
   driverName: { fontSize: FontSize.body, fontFamily: Fonts.bold, color: Colors.text },
   verified: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   verifiedText: { fontSize: FontSize.caption, color: Colors.success, fontFamily: Fonts.semibold },
+  cancellations: { fontSize: FontSize.small, color: Colors.warning, fontFamily: Fonts.semibold },
   actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
   driverRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
 });

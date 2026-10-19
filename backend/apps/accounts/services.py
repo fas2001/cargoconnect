@@ -1,3 +1,4 @@
+import logging
 import secrets
 from datetime import timedelta
 
@@ -12,6 +13,8 @@ from apps.common.exceptions import BusinessRuleError
 from .models import PhoneOTP, User
 from .otp_delivery import OTPDeliveryError, deliver_code
 
+logger = logging.getLogger(__name__)
+
 
 class OTPUnavailable(APIException):
     status_code = 503
@@ -23,9 +26,33 @@ def _config(key):
     return settings.CARGOCONNECT[key]
 
 
+def _otp_allowed(*, phone: str, purpose: str) -> bool:
+    """
+    Faut-il envoyer un code à ce numéro ? Chaque message WhatsApp est facturé et peut servir à harceler
+    un numéro : on n'écrit qu'aux comptes concernés, et pas plus de N fois par heure et par numéro,
+    quelle que soit l'adresse IP de la demande (la limite par IP se contourne en changeant d'adresse).
+    """
+    accounts = User.objects.filter(phone=phone, is_active=True)
+    if purpose == PhoneOTP.Purpose.VERIFY_PHONE:
+        accounts = accounts.filter(phone_verified=False)
+    if not accounts.exists():
+        return False
+    now = timezone.now()
+    recent = PhoneOTP.objects.filter(phone=phone, created_at__gte=now - timedelta(hours=1))
+    if recent.count() >= _config("OTP_MAX_PER_PHONE_PER_HOUR"):
+        logger.warning("Codes : limite horaire atteinte pour %s", phone)
+        return False
+    if recent.filter(created_at__gte=now - timedelta(seconds=_config("OTP_RESEND_DELAY_SECONDS"))).exists():
+        return False  # double appui ou renvoi trop rapide : le code précédent est encore en route
+    return True
+
+
 def request_otp(*, phone: str, purpose: str) -> None:
-    """Génère et envoie un code. Silencieux si le compte n'existe pas (pas d'énumération)."""
-    if purpose == PhoneOTP.Purpose.RESET_PASSWORD and not User.objects.filter(phone=phone, is_active=True).exists():
+    """
+    Génère et envoie un code. Silencieux si le compte n'existe pas ou si la limite est atteinte :
+    la réponse est toujours la même, ce qui empêche de deviner les numéros inscrits.
+    """
+    if not _otp_allowed(phone=phone, purpose=purpose):
         return
     length = _config("OTP_LENGTH")
     code = f"{secrets.randbelow(10**length):0{length}d}"
@@ -93,6 +120,66 @@ def deactivate_user(user: User, *, reason: str) -> int:
         .filter(models.Q(client=user) | models.Q(driver__user=user))
         .count()
     )
+
+
+DELETED_NAME = "Compte supprimé"
+
+
+@transaction.atomic
+def delete_account(user: User) -> None:
+    """
+    Suppression du compte à la demande de son titulaire (exigée par Apple et la loi 09-08).
+
+    Les données personnelles sont effacées : nom, téléphone, e-mail, photo, pièces d'identité, justificatifs
+    et notifications. Les transports terminés restent, anonymisés, car ils sont aussi l'historique de
+    l'autre partie (avis, preuves de livraison). Le numéro redevient libre pour une nouvelle inscription.
+    """
+    from apps.drivers.models import DriverDocument
+    from apps.shipments.services import OPEN_STATUSES
+    from apps.shipments.models import Shipment
+
+    if user.is_staff:
+        raise BusinessRuleError(
+            "Les comptes de l'équipe se suppriment depuis l'administration web.", code="staff_account"
+        )
+    if Shipment.objects.filter(status__in=OPEN_STATUSES).filter(models.Q(client=user) | models.Q(driver__user=user)).exists():
+        raise BusinessRuleError(
+            "Impossible de supprimer le compte tant qu'un transport est en cours. Terminez-le ou contactez l'équipe.",
+            code="active_shipments",
+        )
+
+    deactivate_user(user, reason="Compte supprimé par son titulaire.")
+
+    # Fichiers personnels : effacés du stockage une fois la suppression validée en base.
+    files = [user.avatar] if user.avatar else []
+    identity = getattr(user, "client_identity", None)
+    if identity is not None:
+        files += [doc.file for doc in identity.documents.all()]
+        identity.delete()  # pièces et numéros CIN / ICE
+    if user.is_driver:
+        profile = user.driver_profile
+        documents = DriverDocument.objects.filter(driver=profile)
+        files += [doc.file for doc in documents]
+        documents.delete()
+        profile.company_name = ""
+        profile.bio = ""
+        profile.save(update_fields=["company_name", "bio", "updated_at"])
+        # Les camions restent liés aux transports passés, mais ne sont plus utilisables.
+        profile.vehicles.update(is_active=False)
+    transaction.on_commit(lambda: [f.storage.delete(f.name) for f in files if f and f.name])
+
+    user.notifications.all().delete()
+    user.push_tokens.all().delete()
+    PhoneOTP.objects.filter(phone=user.phone).delete()
+
+    user.full_name = DELETED_NAME
+    user.phone = f"del-{secrets.token_hex(6)}"  # identifiant unique et inutilisable ; le vrai numéro est libéré
+    user.email = ""
+    user.avatar = None
+    user.phone_verified = False
+    user.deleted_at = timezone.now()
+    user.set_unusable_password()
+    user.save()
 
 
 def revoke_all_sessions(user: User) -> None:

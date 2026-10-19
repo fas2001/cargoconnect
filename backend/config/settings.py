@@ -203,6 +203,10 @@ CARGOCONNECT = {
     "OTP_LENGTH": 6,
     "OTP_TTL_MINUTES": 10,
     "OTP_MAX_ATTEMPTS": 5,
+    # Par numéro de téléphone, toutes adresses IP confondues : codes envoyés au plus par heure,
+    # et délai minimal entre deux envois.
+    "OTP_MAX_PER_PHONE_PER_HOUR": int(os.environ.get("OTP_MAX_PER_PHONE_PER_HOUR", "3")),
+    "OTP_RESEND_DELAY_SECONDS": int(os.environ.get("OTP_RESEND_DELAY_SECONDS", "60")),
     "OTP_BACKEND": os.environ.get("OTP_BACKEND", "apps.accounts.otp_delivery.ConsoleBackend"),
     "WHATSAPP": {
         "ACCESS_TOKEN": os.environ.get("WHATSAPP_ACCESS_TOKEN", ""),

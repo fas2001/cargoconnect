@@ -50,6 +50,13 @@ def create_offer(*, cargo: Cargo, driver, vehicle=None, price, message: str = ""
         raise BusinessRuleError("Vous ne pouvez pas proposer un tarif sur votre propre annonce.", code="own_cargo")
     _ensure_driver_can_offer(driver)
     _ensure_vehicle_ok(vehicle, cargo)
+    # Un refus du client est définitif pour cette annonce : sinon le chauffeur pourrait relancer sans fin.
+    # (Après un simple retrait par le chauffeur, il peut proposer de nouveau.)
+    if Offer.objects.filter(cargo=cargo, driver=driver, status=OfferStatus.REJECTED).exists():
+        raise BusinessRuleError(
+            "Le client a refusé votre proposition pour cette annonce : vous ne pouvez plus en envoyer.",
+            code="offer_rejected",
+        )
     if Offer.objects.filter(cargo=cargo, driver=driver, status=OfferStatus.PENDING).exists():
         raise BusinessRuleError(
             "Vous avez déjà une proposition en cours sur cette annonce : modifiez-la.", code="offer_exists"

@@ -58,6 +58,8 @@ export const api = {
   changePassword: (body: { current_password: string; new_password: string }) =>
     // Les autres appareils sont déconnectés ; celui-ci reçoit de nouveaux jetons.
     apiRequest<{ access: string; refresh: string }>('/me/password/', { method: 'POST', body }),
+  /** Suppression définitive du compte (données personnelles effacées). Le mot de passe est exigé. */
+  deleteAccount: (password: string) => apiRequest<void>('/me/', { method: 'DELETE', body: { password } }),
   verifyPhone: (code: string) => apiRequest<User>('/me/verify-phone/', { method: 'POST', body: { code } }),
   driverProfile: () => apiRequest<DriverProfile>('/me/driver-profile/'),
   vehicles: () => apiRequest<Paginated<Vehicle>>('/me/vehicles/'),

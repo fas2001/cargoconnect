@@ -163,6 +163,17 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
 
+class DeleteAccountSerializer(serializers.Serializer):
+    """Le mot de passe confirme que c'est bien le titulaire qui supprime son compte."""
+
+    password = serializers.CharField(write_only=True)
+
+    def validate_password(self, value):
+        if not self.context["request"].user.check_password(value):
+            raise serializers.ValidationError("Mot de passe incorrect.")
+        return value
+
+
 class OTPRequestSerializer(serializers.Serializer):
     phone = PhoneField()
     purpose = serializers.ChoiceField(choices=PhoneOTP.Purpose.choices)
